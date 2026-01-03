@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Secrets / env
+.env
+.env.*
+
+# Node (future)
+node_modules/
+dist/
+.vite/
+
+# Firebase (future)
+.firebase/
+firebase-debug.log

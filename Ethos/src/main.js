@@ -2,7 +2,8 @@
 import "./styles/base.css";
 
 import { observeAuth } from "./lib/auth.js";
-import { getUserProfile } from "./lib/db.js";
+import { getUserProfile, normalizeUserProfile } from "./lib/db.js";
+import { applyThemeFromProfile } from "./lib/theme.js";
 
 import { getRoute, navigate, startRouter } from "./router.js";
 
@@ -16,9 +17,16 @@ import { authCreatePasswordPage } from "./pages/authCreatePassword.js";
 import { profileSetupPage } from "./pages/profileSetup.js";
 import { homePage } from "./pages/home.js";
 import { todayPage } from "./pages/today.js";
+import { todayLogPage } from "./pages/todayLog.js";
 import { historyPage } from "./pages/history.js";
 import { settingsPage } from "./pages/settings.js";
 import { leaderboardPage } from "./pages/leaderboard.js";
+
+// Settings sub-pages
+import { settingsProfilePage } from "./pages/settingsProfile.js";
+import { settingsTracksPage } from "./pages/settingsTracks.js";
+import { settingsTrackEditPage } from "./pages/settingsTrackEdit.js";
+import { settingsThemePage } from "./pages/settingsTheme.js";
 
 let currentUser = null;
 let currentProfile = null;
@@ -26,6 +34,9 @@ let profileLoadedForUid = null;
 
 // prevents the “flash to auth” on refresh
 let authResolved = false;
+
+// normalization guard (avoid infinite loops)
+let normalizedForUid = null;
 
 function isPublicRoute(path) {
   return path.startsWith("#/auth");
@@ -39,7 +50,13 @@ function isProtectedRoute(path) {
     "#/history",
     "#/settings",
     "#/leaderboard",
-  ].includes(path);
+    "#/settings/profile",
+    "#/settings/theme",
+    "#/settings/tracks",
+    "#/settings/tracks/edit",
+    "#/settings/tracks/new",
+    "#/today/log",
+  ].includes(path.split("?")[0]);
 }
 
 async function ensureProfileLoaded() {
@@ -69,16 +86,39 @@ function getRenderer(path) {
     // Protected
     case "#/profile-setup":
       return () => profileSetupPage({ user: currentUser });
+
     case "#/home":
       return homePage;
+
     case "#/today":
-      return todayPage;
+      return () => todayPage({ user: currentUser, profile: currentProfile });
+    
+    case "#/today/log":
+      return () => todayLogPage({ user: currentUser, profile: currentProfile });  
+
     case "#/history":
       return historyPage;
+
     case "#/leaderboard":
       return leaderboardPage;
+
     case "#/settings":
-      return settingsPage;
+      return () => settingsPage({ user: currentUser, profile: currentProfile });
+
+    case "#/settings/profile":
+      return () => settingsProfilePage({ user: currentUser, profile: currentProfile });
+
+    case "#/settings/theme":
+      return () => settingsThemePage({ user: currentUser, profile: currentProfile });
+
+    case "#/settings/tracks":
+      return () => settingsTracksPage({ user: currentUser, profile: currentProfile });
+
+    case "#/settings/tracks/edit":
+      return () => settingsTrackEditPage({ user: currentUser, mode: "edit" });
+
+    case "#/settings/tracks/new":
+      return () => settingsTrackEditPage({ user: currentUser, mode: "new" });
 
     default:
       return null;
@@ -120,6 +160,31 @@ async function renderApp() {
     return;
   }
 
+  // ✅ TEMPORARY NORMALIZATION PASS (runs once per uid per session)
+  if (currentUser && currentProfile && normalizedForUid !== currentUser.uid) {
+    try {
+      const didWrite = await normalizeUserProfile(
+        currentUser.uid,
+        currentUser.email,
+        currentProfile
+      );
+
+      normalizedForUid = currentUser.uid;
+
+      if (didWrite) {
+        // reload profile so downstream reads use corrected structure
+        currentProfile = await getUserProfile(currentUser.uid);
+      }
+    } catch (e) {
+      console.error("Profile normalization failed:", e);
+      // Don't block rendering; continue with what we have
+      normalizedForUid = currentUser.uid;
+    }
+  }
+
+  // ✅ APPLY THEME AFTER PROFILE IS STABLE
+  applyThemeFromProfile(currentProfile);
+
   // Profile exists but user visits auth routes → send home
   if (currentProfile && isPublicRoute(path)) {
     navigate("#/home");
@@ -151,8 +216,10 @@ observeAuth(async (user) => {
   if (!currentUser) {
     currentProfile = null;
     profileLoadedForUid = null;
+    normalizedForUid = null;
   } else if (profileLoadedForUid !== currentUser.uid) {
     currentProfile = null;
+    normalizedForUid = null;
   }
 
   await renderApp();

@@ -7,7 +7,16 @@
     --border:#222636;
     --btn:#1b2030;
     --btn2:#2a3350;
+  
+    /* accents (user-customizable) */
+    --accent-1: #7c3aed;
+    --accent-2: #14b8a6;
   }
+  
+  /* theme mode hook (optional; can expand later) */
+  :root[data-theme="light"] { color-scheme: light; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="system"] { color-scheme: light dark; }
   
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -34,6 +43,11 @@
   .muted{color:var(--muted)}
   .stack{display:flex; flex-direction:column; gap:10px; margin-top:14px}
   
+  /* helpers */
+  .row{display:flex; align-items:center}
+  .col{display:flex; flex-direction:column}
+  .mini{font-size: 12px; opacity: 0.75}
+  
   .input{
     width:100%;
     padding:12px 12px;
@@ -46,6 +60,28 @@
   
   .label{font-size: 13px; color: var(--muted); margin-top: 6px}
   
+  .select{
+    width:100%;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background: #0f1118;
+    color: var(--text);
+    outline:none;
+  }
+  
+  .textarea{
+    width:100%;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background: #0f1118;
+    color: var(--text);
+    outline:none;
+    min-height: 92px;
+    resize: vertical;
+  }
+  
   .btn{
     padding:12px 12px;
     border-radius: 12px;
@@ -55,11 +91,17 @@
     cursor:pointer;
   }
   .btn.primary{
-    background: var(--btn2);
-    border-color: #34406a;
+    background: var(--accent-1);
+    border-color: transparent;
+    color: white;
   }
   .btn.ghost{
     background: transparent;
+  }
+  .btn.danger{
+    background: #ef4444;
+    border-color: transparent;
+    color: white;
   }
   
   .link{
@@ -110,6 +152,35 @@
     margin-bottom: 8px;
   }
   
+  /* list styles (settings + track list) */
+  .list{display:flex; flex-direction:column; gap:10px; margin-top:12px;}
+  .list-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px;
+    border-radius:12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+  }
+  .li-title{font-weight: 600;}
+  .chev{opacity: 0.6; font-size: 20px;}
+  
+  /* form layout helpers */
+  .form{display:flex; flex-direction:column; gap:12px; margin-top:12px;}
+  .field .label{font-size:12px; opacity:0.8; margin-bottom:6px;}
+  
+  /* toggles */
+  .toggle{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    user-select:none;
+    color: var(--muted);
+  }
+  .toggle input{transform: scale(1.2);}
+  
   .tabs{
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -132,8 +203,8 @@
   }
   .tab.active{
     color: var(--text);
-    border-color: #34406a;
-    background: #101426;
+    border-color: rgba(124,58,237,0.45); /* subtle accent */
+    background: rgba(124,58,237,0.12);
   }
   
   .tab {
@@ -172,7 +243,7 @@
     font-size: 12px;
     line-height: 1;
   }
-
+  
   .tab-center {
     transform: translateY(-6px);
     padding: 14px 10px;
@@ -188,3 +259,88 @@
     height: 28px;
   }
   
+  /* Make settings list buttons look consistent */
+  button.list-item {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+  
+  /* Better spacing between left text and right chevron */
+  .list-item > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  /* Make color pickers not ridiculously wide */
+  .input[type="color"]{
+    width: 64px;
+    height: 42px;
+    padding: 0;
+    border-radius: 12px;
+  }
+  
+  .fab{
+    position: fixed;
+    right: 16px;
+    bottom: 86px; /* above tabs */
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 28px;
+    line-height: 0;
+    color: white;
+    background: var(--accent-1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  .fab:active{ transform: translateY(1px); }
+
+  .row{display:flex;align-items:center}
+  .mini{font-size:12px}
+
+  .bullets{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top: 2px;
+  }
+
+  .bullet{
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .textarea{
+    width:100%;
+    min-height: 92px;
+    resize: vertical;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:#0f1118;
+    color: var(--text);
+    outline:none;
+  }
+  .select{
+    width:100%;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:#0f1118;
+    color: var(--text);
+    outline:none;
+  }
+  .toggle{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    color: var(--muted);
+  }

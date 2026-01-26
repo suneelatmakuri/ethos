@@ -27,6 +27,7 @@ import { settingsProfilePage } from "./pages/settingsProfile.js";
 import { settingsTracksPage } from "./pages/settingsTracks.js";
 import { settingsTrackEditPage } from "./pages/settingsTrackEdit.js";
 import { settingsThemePage } from "./pages/settingsTheme.js";
+import { settingsTrackTemplatesPage } from "./pages/settingsTrackTemplates.js";
 
 let currentUser = null;
 let currentProfile = null;
@@ -47,6 +48,7 @@ function isProtectedRoute(path) {
     "#/profile-setup",
     "#/home",
     "#/today",
+    "#/today/log",
     "#/history",
     "#/settings",
     "#/leaderboard",
@@ -55,7 +57,7 @@ function isProtectedRoute(path) {
     "#/settings/tracks",
     "#/settings/tracks/edit",
     "#/settings/tracks/new",
-    "#/today/log",
+    "#/settings/tracks/templates",
   ].includes(path.split("?")[0]);
 }
 
@@ -72,7 +74,9 @@ async function ensureProfileLoaded() {
 }
 
 function getRenderer(path) {
-  switch (path) {
+  const base = path.split("?")[0];
+
+  switch (base) {
     // Public
     case "#/auth":
       return authLandingPage;
@@ -92,9 +96,9 @@ function getRenderer(path) {
 
     case "#/today":
       return () => todayPage({ user: currentUser, profile: currentProfile });
-    
+
     case "#/today/log":
-      return () => todayLogPage({ user: currentUser, profile: currentProfile });  
+      return () => todayLogPage({ user: currentUser, profile: currentProfile });
 
     case "#/history":
       return historyPage;
@@ -120,88 +124,112 @@ function getRenderer(path) {
     case "#/settings/tracks/new":
       return () => settingsTrackEditPage({ user: currentUser, mode: "new" });
 
+    case "#/settings/tracks/templates":
+      // IMPORTANT: ensure it actually renders
+      return () => settingsTrackTemplatesPage();
+
     default:
       return null;
   }
 }
 
+function renderFatal(error) {
+  console.error("App render fatal:", error);
+  const root = document.getElementById("app");
+  root.innerHTML = `
+    <div class="center">
+      <div class="card">
+        <div class="card-title">Something broke</div>
+        <p class="muted" style="white-space:pre-wrap;">${error?.message || String(error)}</p>
+        <button class="btn" onclick="location.reload()">Reload</button>
+      </div>
+    </div>
+  `;
+}
+
 async function renderApp() {
-  // Wait until Firebase resolves auth at least once (prevents refresh flicker)
-  if (!authResolved) {
-    document.getElementById("app").innerHTML =
-      `<div class="center"><p class="muted">Loading…</p></div>`;
-    return;
-  }
-
-  const { path } = getRoute();
-
-  // Default route if hash is empty
-  if (!path) {
-    navigate("#/auth");
-    return;
-  }
-
-  // Not signed in → allow only auth routes
-  if (!currentUser) {
-    if (!isPublicRoute(path)) navigate("#/auth");
-    const { path: finalPath } = getRoute();
-    const fn = getRenderer(finalPath) || authLandingPage;
-    fn();
-    return;
-  }
-
-  // Signed in → load profile
-  await ensureProfileLoaded();
-
-  // Profile missing → force profile setup (block everything else)
-  if (!currentProfile && path !== "#/profile-setup") {
-    navigate("#/profile-setup");
-    profileSetupPage({ user: currentUser });
-    return;
-  }
-
-  // ✅ TEMPORARY NORMALIZATION PASS (runs once per uid per session)
-  if (currentUser && currentProfile && normalizedForUid !== currentUser.uid) {
-    try {
-      const didWrite = await normalizeUserProfile(
-        currentUser.uid,
-        currentUser.email,
-        currentProfile
-      );
-
-      normalizedForUid = currentUser.uid;
-
-      if (didWrite) {
-        // reload profile so downstream reads use corrected structure
-        currentProfile = await getUserProfile(currentUser.uid);
-      }
-    } catch (e) {
-      console.error("Profile normalization failed:", e);
-      // Don't block rendering; continue with what we have
-      normalizedForUid = currentUser.uid;
+  try {
+    // Wait until Firebase resolves auth at least once (prevents refresh flicker)
+    if (!authResolved) {
+      document.getElementById("app").innerHTML =
+        `<div class="center"><p class="muted">Loading…</p></div>`;
+      return;
     }
-  }
 
-  // ✅ APPLY THEME AFTER PROFILE IS STABLE
-  applyThemeFromProfile(currentProfile);
+    const { path } = getRoute();
 
-  // Profile exists but user visits auth routes → send home
-  if (currentProfile && isPublicRoute(path)) {
+    // Default route if hash is empty
+    if (!path) {
+      navigate("#/auth");
+      return;
+    }
+
+    // Not signed in → allow only auth routes
+    if (!currentUser) {
+      if (!isPublicRoute(path)) navigate("#/auth");
+      const { path: finalPath } = getRoute();
+      const fn = getRenderer(finalPath) || authLandingPage;
+      fn();
+      return;
+    }
+
+    // Signed in → load profile
+    await ensureProfileLoaded();
+
+    // Profile missing → force profile setup (block everything else)
+    if (!currentProfile && path !== "#/profile-setup") {
+      navigate("#/profile-setup");
+      profileSetupPage({ user: currentUser });
+      return;
+    }
+
+    // Normalize once per session (optional)
+    if (currentUser && currentProfile && normalizedForUid !== currentUser.uid) {
+      try {
+        const didWrite = await normalizeUserProfile(
+          currentUser.uid,
+          currentUser.email,
+          currentProfile
+        );
+
+        normalizedForUid = currentUser.uid;
+
+        if (didWrite) {
+          currentProfile = await getUserProfile(currentUser.uid);
+        }
+      } catch (e) {
+        console.error("Profile normalization failed:", e);
+        normalizedForUid = currentUser.uid;
+      }
+    }
+
+    // Apply theme (never allow this to blank the app)
+    try {
+      applyThemeFromProfile(currentProfile);
+    } catch (e) {
+      console.warn("Theme apply failed (continuing):", e);
+    }
+
+    // Profile exists but user visits auth routes → send home
+    if (currentProfile && isPublicRoute(path)) {
+      navigate("#/home");
+      homePage();
+      return;
+    }
+
+    // Render protected routes
+    if (isProtectedRoute(path)) {
+      const fn = getRenderer(path) || homePage;
+      fn();
+      return;
+    }
+
+    // Fallback
     navigate("#/home");
     homePage();
-    return;
+  } catch (e) {
+    renderFatal(e);
   }
-
-  // Render protected routes
-  if (isProtectedRoute(path)) {
-    const fn = getRenderer(path) || homePage;
-    fn();
-    return;
-  }
-
-  // Fallback
-  navigate("#/home");
-  homePage();
 }
 
 // Start router (hashchange)

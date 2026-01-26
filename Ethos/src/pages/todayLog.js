@@ -14,7 +14,10 @@ import {
 import { db } from "../lib/firebase.js";
 
 function esc(s) {
-  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return String(s ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
 
 export async function todayLogPage({ user, profile }) {
@@ -36,36 +39,46 @@ export async function todayLogPage({ user, profile }) {
     const form = tracks.map((t) => {
       const agg = dayDoc?.tracks?.[t.id] || null;
 
+      // TEXT_APPEND
+      if (t.type === "TEXT_APPEND") {
+        const count = agg?.count || 0;
+        return `
+          <div class="card">
+            <div class="card-title">${esc(t.name)}</div>
+            <div class="mini muted">Entries today: ${count}</div>
+            <textarea class="input" rows="2"
+              data-track="${t.id}" data-type="TEXT_APPEND"
+              placeholder="Write a quick note…"></textarea>
+          </div>
+        `;
+      }
+
+      // NUMBER_REPLACE
       if (t.type === "NUMBER_REPLACE") {
         const current = (agg?.value === 0 || agg?.value) ? agg.value : "";
         return `
           <div class="card">
             <div class="card-title">${esc(t.name)}</div>
-            <div class="mini muted">Current: ${current === "" ? "—" : esc(current)} ${esc(t.unit || "")}</div>
-            <input class="input" type="number" step="${t.config?.precision ? (1 / Math.pow(10, t.config.precision)) : "any"}"
-              data-track="${t.id}" data-type="NUMBER_REPLACE" placeholder="Enter value" />
+            <div class="mini muted">Current: ${esc(current)} ${esc(t.unit || "")}</div>
+            <input class="input"
+              inputmode="decimal"
+              type="text"
+              data-track="${t.id}" data-type="NUMBER_REPLACE"
+              placeholder="Enter value"
+              value="" />
           </div>
         `;
       }
 
-      if (t.type === "TEXT_APPEND") {
-        return `
-          <div class="card">
-            <div class="card-title">${esc(t.name)}</div>
-            <div class="mini muted">${agg?.count ? `Entries today: ${agg.count}` : "No entries yet"}</div>
-            <textarea class="textarea" data-track="${t.id}" data-type="TEXT_APPEND" placeholder="Write a quick note..."></textarea>
-          </div>
-        `;
-      }
-
+      // DROPDOWN_EVENT (Choice)
       if (t.type === "DROPDOWN_EVENT") {
-        const opts = (t.config?.options || []).map(o =>
-          `<option value="${esc(o.id)}">${esc(o.label)}</option>`
-        ).join("");
+        const count = agg?.count || 0;
+        const options = Array.isArray(t.config?.options) ? t.config.options : [];
+        const opts = options.map((o) => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join("");
         return `
           <div class="card">
             <div class="card-title">${esc(t.name)}</div>
-            <div class="mini muted">${agg?.count ? `Count today: ${agg.count}` : "No events yet"}</div>
+            <div class="mini muted">Count today: ${count}</div>
             <select class="select" data-track="${t.id}" data-type="DROPDOWN_EVENT">
               <option value="">Select…</option>
               ${opts}
@@ -74,20 +87,37 @@ export async function todayLogPage({ user, profile }) {
         `;
       }
 
+      // COUNTER_INCREMENT (✅ upgraded UI)
       if (t.type === "COUNTER_INCREMENT") {
-        const step = t.config?.incrementStep || 1;
+        const step = Number(t.config?.incrementStep || 1);
         const currentSum = agg?.sum || 0;
+
         return `
           <div class="card">
             <div class="card-title">${esc(t.name)}</div>
             <div class="mini muted">Today: ${esc(currentSum)} ${esc(t.unit || "")}</div>
-            <input class="input" type="number" min="0" step="${step}"
-              data-track="${t.id}" data-type="COUNTER_INCREMENT"
-              placeholder="Add amount (e.g. ${step})" />
+
+            <div class="row" style="align-items:center;gap:10px;">
+              <button class="btn" type="button" data-counter-dec="${t.id}">−</button>
+
+              <input class="input"
+                style="width:90px;text-align:center;"
+                inputmode="numeric"
+                type="text"
+                data-track="${t.id}" data-type="COUNTER_INCREMENT"
+                data-step="${step}"
+                placeholder="${step}"
+                value="" />
+
+              <button class="btn" type="button" data-counter-inc="${t.id}">+</button>
+
+              <div class="mini muted">(${step} ${esc(t.unit || "")})</div>
+            </div>
           </div>
         `;
       }
 
+      // BOOLEAN
       if (t.type === "BOOLEAN") {
         const mode = t.config?.booleanMode || "done_only";
         if (mode === "done_only") {
@@ -102,7 +132,7 @@ export async function todayLogPage({ user, profile }) {
             </div>
           `;
         }
-        // count mode
+        // count mode (legacy)
         return `
           <div class="card">
             <div class="card-title">${esc(t.name)}</div>
@@ -143,6 +173,39 @@ export async function todayLogPage({ user, profile }) {
 
     root.querySelector("#back").addEventListener("click", () => navigate("#/today"));
 
+    // ✅ Counter + / - bindings (works with your existing submit model)
+    root.querySelectorAll("[data-counter-inc]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const trackId = btn.dataset.counterInc;
+        const input = root.querySelector(`input[data-track="${trackId}"][data-type="COUNTER_INCREMENT"]`);
+        if (!input) return;
+
+        const step = Number(input.dataset.step || 1);
+        const current = Number(String(input.value || "").trim() || 0);
+        input.value = String(current + step);
+      });
+    });
+
+    root.querySelectorAll("[data-counter-dec]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const trackId = btn.dataset.counterDec;
+        const input = root.querySelector(`input[data-track="${trackId}"][data-type="COUNTER_INCREMENT"]`);
+        if (!input) return;
+
+        const step = Number(input.dataset.step || 1);
+        const current = Number(String(input.value || "").trim() || 0);
+        input.value = String(Math.max(0, current - step));
+      });
+    });
+
+    // Optional QoL: when user chooses an option, reset dropdown so multiple picks are easy
+    root.querySelectorAll('select[data-type="DROPDOWN_EVENT"]').forEach((sel) => {
+      sel.addEventListener("change", () => {
+        // do not erase value for submit; your current submit reads it once.
+        // If you want multi-pick-before-submit later, we’ll change the model.
+      });
+    });
+
     root.querySelector("#submit").addEventListener("click", async () => {
       const status = root.querySelector("#status");
       status.textContent = "Saving…";
@@ -169,225 +232,222 @@ export async function todayLogPage({ user, profile }) {
         const trackId = el.dataset.track;
         const type = el.dataset.type;
 
-        // skip empty fields
+        // TEXT_APPEND
         if (type === "TEXT_APPEND") {
-            const text = el.value.trim();
-            if (!text) continue;
-          
-            const entryRef = doc(entriesRef);
-          
-            batch.set(entryRef, {
-              trackId,
-              type: "TEXT_APPEND",
-              text,
-              createdAt: serverTimestamp(),
-              createdAtMs: Date.now(),
-            });
-          
-            batch.set(
-              dayRef,
-              {
-                tracks: {
-                  [trackId]: {
-                    type: "TEXT_APPEND",
-                    count: increment(1),
-                    preview: text.slice(0, 80),
-                    lastAt: serverTimestamp(),
-                  },
-                },
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
-          
-            writes++;
-            continue;
-          }
-          
+          const text = el.value.trim();
+          if (!text) continue;
 
+          const entryRef = doc(entriesRef);
+
+          batch.set(entryRef, {
+            trackId,
+            type: "TEXT_APPEND",
+            text,
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+          });
+
+          batch.set(
+            dayRef,
+            {
+              tracks: {
+                [trackId]: {
+                  type: "TEXT_APPEND",
+                  count: increment(1),
+                  preview: text.slice(0, 80),
+                  lastAt: serverTimestamp(),
+                },
+              },
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+          writes++;
+          continue;
+        }
+
+        // NUMBER_REPLACE
         if (type === "NUMBER_REPLACE") {
-            const v = el.value.trim();
-            if (v === "") continue;
-          
-            const value = Number(v);
-            if (Number.isNaN(value)) continue;
-          
-            const entryRef = doc(entriesRef);
-          
-            // 1) Entry doc
-            batch.set(entryRef, {
-              trackId,
-              type: "NUMBER_REPLACE",
-              value,
-              createdAt: serverTimestamp(),
-              createdAtMs: Date.now(),
-            });
-          
-            // 2) Day aggregates (nested map)
-            batch.set(
-              dayRef,
-              {
-                tracks: {
-                  [trackId]: {
-                    type: "NUMBER_REPLACE",
-                    value,
-                    lastAt: serverTimestamp(),
-                  },
-                },
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
-          
-            writes++;
-            continue;
-        }
-          
+          const v = el.value.trim();
+          if (v === "") continue;
 
+          const value = Number(v);
+          if (Number.isNaN(value)) continue;
+
+          const entryRef = doc(entriesRef);
+
+          batch.set(entryRef, {
+            trackId,
+            type: "NUMBER_REPLACE",
+            value,
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+          });
+
+          batch.set(
+            dayRef,
+            {
+              tracks: {
+                [trackId]: {
+                  type: "NUMBER_REPLACE",
+                  value,
+                  lastAt: serverTimestamp(),
+                },
+              },
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+          writes++;
+          continue;
+        }
+
+        // COUNTER_INCREMENT (delta)
         if (type === "COUNTER_INCREMENT") {
-            const v = el.value.trim();
-            if (v === "") continue;
-          
-            const deltaValue = Number(v);
-            if (!deltaValue || Number.isNaN(deltaValue)) continue;
-          
-            const entryRef = doc(entriesRef);
-          
-            batch.set(entryRef, {
-              trackId,
-              type: "COUNTER_INCREMENT",
-              deltaValue,
-              createdAt: serverTimestamp(),
-              createdAtMs: Date.now(),
-            });
-          
-            batch.set(
-              dayRef,
-              {
-                tracks: {
-                  [trackId]: {
-                    type: "COUNTER_INCREMENT",
-                    count: increment(1),
-                    sum: increment(deltaValue),
-                    lastAt: serverTimestamp(),
-                  },
-                },
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
-          
-            writes++;
-            continue;
-          }
-          
+          const v = String(el.value || "").trim();
+          if (v === "") continue;
 
+          const deltaValue = Number(v);
+          if (!deltaValue || Number.isNaN(deltaValue)) continue;
+
+          const entryRef = doc(entriesRef);
+
+          batch.set(entryRef, {
+            trackId,
+            type: "COUNTER_INCREMENT",
+            deltaValue,
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+          });
+
+          batch.set(
+            dayRef,
+            {
+              tracks: {
+                [trackId]: {
+                  type: "COUNTER_INCREMENT",
+                  count: increment(1),
+                  sum: increment(deltaValue),
+                  lastAt: serverTimestamp(),
+                },
+              },
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+          writes++;
+          continue;
+        }
+
+        // DROPDOWN_EVENT
         if (type === "DROPDOWN_EVENT") {
-            const optionId = el.value;
-            if (!optionId) continue;
-          
-            const entryRef = doc(entriesRef);
-          
-            batch.set(entryRef, {
-              trackId,
-              type: "DROPDOWN_EVENT",
-              optionIds: [optionId],
-              createdAt: serverTimestamp(),
-              createdAtMs: Date.now(),
-            });
-          
-            batch.set(
-              dayRef,
-              {
-                tracks: {
-                  [trackId]: {
-                    type: "DROPDOWN_EVENT",
-                    count: increment(1),
-                    lastValue: [optionId],
-                    lastAt: serverTimestamp(),
-                  },
-                },
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
-          
-            writes++;
-            continue;
-        }
-          
+          const optionId = el.value;
+          if (!optionId) continue;
 
+          const entryRef = doc(entriesRef);
+
+          batch.set(entryRef, {
+            trackId,
+            type: "DROPDOWN_EVENT",
+            optionIds: [optionId],
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+          });
+
+          batch.set(
+            dayRef,
+            {
+              tracks: {
+                [trackId]: {
+                  type: "DROPDOWN_EVENT",
+                  count: increment(1),
+                  lastValue: [optionId],
+                  lastAt: serverTimestamp(),
+                },
+              },
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+          writes++;
+          continue;
+        }
+
+        // BOOLEAN_DONE
         if (type === "BOOLEAN_DONE") {
-            const value = !!el.checked;
-          
-            const entryRef = doc(entriesRef);
-          
-            batch.set(entryRef, {
-              trackId,
-              type: "BOOLEAN",
-              value,
-              createdAt: serverTimestamp(),
-              createdAtMs: Date.now(),
-            });
-          
-            batch.set(
-              dayRef,
-              {
-                tracks: {
-                  [trackId]: {
-                    type: "BOOLEAN",
-                    done: value,
-                    count: value ? 1 : 0,
-                    lastAt: serverTimestamp(),
-                  },
-                },
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
-          
-            writes++;
-            continue;
-        }
-          
+          const value = !!el.checked;
 
-        if (type === "BOOLEAN_COUNT") {
-            const v = el.value.trim();
-            if (v === "") continue;
-          
-            const deltaCount = Number(v);
-            if (!deltaCount || Number.isNaN(deltaCount)) continue;
-          
-            const entryRef = doc(entriesRef);
-          
-            batch.set(entryRef, {
-              trackId,
-              type: "BOOLEAN",
-              deltaCount,
-              createdAt: serverTimestamp(),
-              createdAtMs: Date.now(),
-            });
-          
-            batch.set(
-              dayRef,
-              {
-                tracks: {
-                  [trackId]: {
-                    type: "BOOLEAN",
-                    count: increment(deltaCount),
-                    done: true,
-                    lastAt: serverTimestamp(),
-                  },
+          const entryRef = doc(entriesRef);
+
+          batch.set(entryRef, {
+            trackId,
+            type: "BOOLEAN",
+            value,
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+          });
+
+          batch.set(
+            dayRef,
+            {
+              tracks: {
+                [trackId]: {
+                  type: "BOOLEAN",
+                  done: value,
+                  count: value ? 1 : 0,
+                  lastAt: serverTimestamp(),
                 },
-                updatedAt: serverTimestamp(),
               },
-              { merge: true }
-            );
-          
-            writes++;
-            continue;
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+          writes++;
+          continue;
         }
-          
+
+        // BOOLEAN_COUNT (legacy)
+        if (type === "BOOLEAN_COUNT") {
+          const v = el.value.trim();
+          if (v === "") continue;
+
+          const deltaCount = Number(v);
+          if (!deltaCount || Number.isNaN(deltaCount)) continue;
+
+          const entryRef = doc(entriesRef);
+
+          batch.set(entryRef, {
+            trackId,
+            type: "BOOLEAN",
+            deltaCount,
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+          });
+
+          batch.set(
+            dayRef,
+            {
+              tracks: {
+                [trackId]: {
+                  type: "BOOLEAN",
+                  count: increment(deltaCount),
+                  done: true,
+                  lastAt: serverTimestamp(),
+                },
+              },
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+
+          writes++;
+          continue;
+        }
       }
 
       if (!writes) {
@@ -399,7 +459,6 @@ export async function todayLogPage({ user, profile }) {
       try {
         await batch.commit();
         status.textContent = "Saved.";
-        // go back to Today summary (it will fetch fresh)
         navigate("#/today");
       } catch (e) {
         console.error("Log submit failed:", e);

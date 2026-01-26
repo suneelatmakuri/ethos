@@ -432,3 +432,21 @@
     background: #fff;
   }
   
+  .pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+
+  border-radius: 999px;
+  border: 1px solid var(--border);
+
+  color: var(--text-muted);
+  background: transparent;
+
+  vertical-align: middle;
+  white-space: nowrap;
+}

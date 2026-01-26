@@ -164,6 +164,7 @@ export async function createTrack(uid, track) {
   const payload = {
     ...track,
     isActive: track?.isActive ?? true,
+    isPrivate: track?.isPrivate ?? false,
     sortOrder: track?.sortOrder ?? Date.now(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

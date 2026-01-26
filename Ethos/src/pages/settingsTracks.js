@@ -39,6 +39,11 @@ export async function settingsTracksPage({ user }) {
     return `${cad}${unit}`.trim();
   }
 
+  function privateBadge(track) {
+    if (!track?.isPrivate) return "";
+    return `<span class="pill">Private</span>`;
+  }
+
   function render() {
     root.innerHTML = Shell({
       title: "Manage Tracks",
@@ -162,7 +167,10 @@ export async function settingsTracksPage({ user }) {
         <div class="drag-handle" data-handle="1" title="Hold & drag">≡</div>
 
         <div class="track-main">
-          <div class="track-title">${escapeHtml(t.name)}</div>
+          <div class="track-title">
+            ${escapeHtml(t.name)}
+            ${privateBadge(t)}
+          </div>
           <div class="track-meta muted">${escapeHtml(metaLabel(t))}</div>
         </div>
 
@@ -184,7 +192,10 @@ export async function settingsTracksPage({ user }) {
         <div class="drag-handle drag-handle-disabled" title="Inactive">≡</div>
 
         <div class="track-main">
-          <div class="track-title">${escapeHtml(t.name)}</div>
+          <div class="track-title">
+            ${escapeHtml(t.name)}
+            ${privateBadge(t)}
+          </div>
           <div class="track-meta muted">${escapeHtml(metaLabel(t))}</div>
         </div>
 

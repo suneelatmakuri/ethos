@@ -6,7 +6,7 @@ export function registerRoute(path, renderFn) {
 }
 
 export function getRoute() {
-  const raw = window.location.hash || "#/auth";
+  const raw = window.location.hash || "#/welcome";
   const [path, queryString] = raw.split("?");
   const query = new URLSearchParams(queryString || "");
   return { path, query, raw };

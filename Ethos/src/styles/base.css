@@ -450,3 +450,470 @@
   vertical-align: middle;
   white-space: nowrap;
 }
+
+
+
+/* Leaderboard Coming Soon */
+/* ===== FORCE rings to render correctly (numbers inside) ===== */
+
+.lb-circles{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  justify-items: center;
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+.lb-ring{
+  width: 86px;
+  height: 86px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.lb-ringSvg{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.lb-ringTrack{
+  fill: none;
+  stroke: rgba(255,255,255,0.12);
+  stroke-width: 8;
+}
+
+.lb-ringProg{
+  fill: none;
+  stroke: rgba(255,255,255,0.85);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 250ms linear;
+}
+
+.lb-ringCenter{
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1;
+}
+
+.lb-ringNum{
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+}
+
+.lb-ringLbl{
+  margin-top: 4px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* keep it nice on small screens */
+@media (max-width: 380px){
+  .lb-ring{ width: 74px; height: 74px; }
+  .lb-ringNum{ font-size: 18px; }
+}
+
+
+
+
+/* ===== Build progress: proper bar + clean spacing ===== */
+
+.lb-progress{
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.lb-progressTop{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.lb-progressLabel{
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.lb-progressPct{
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.lb-bar{
+  height: 10px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+  overflow: hidden;
+}
+
+.lb-barFill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.70);
+  transition: width 300ms ease;
+}
+
+.lb-meta{
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+
+/* ===== FORCE hero image to behave (override global img rules) ===== */
+
+.lb-hero{
+  display: grid;
+  place-items: center;
+  margin: 10px 0 6px;
+  overflow: hidden; /* prevents weird spill */
+}
+
+.lb-img{
+  width: clamp(180px, 60vw, 320px) !important;
+  max-width: 100% !important;
+  height: auto !important;
+
+  /* the real cap */
+  max-height: 590px !important;
+
+  object-fit: contain !important;
+  display: block !important;
+
+  /* optional: keep it crisp and not “stuck to top” */
+  margin: 0 auto !important;
+}
+
+
+
+/* =========================
+   WELCOME (video hero)
+   ========================= */
+
+body.welcome-mode {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Fullscreen stage */
+.welcomeStage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000; /* fallback */
+}
+
+/* Background video */
+.welcomeVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* fill the screen */
+  object-position: center; /* keep centered */
+  transform: translateZ(0);
+}
+
+/* Optional readability layer (subtle) */
+.welcomeOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* allow clicks only on button */
+  background: radial-gradient(900px 450px at 50% 40%, rgba(0,0,0,0.18), rgba(0,0,0,0.55));
+}
+
+/* Title at ~40% from top, centered */
+.welcomeTitle {
+  position: absolute;
+  top: 40vh;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(calc(var(--welcomeTitleScale, 1) * 0.84));
+  opacity: 0;
+
+  font-family: "Times New Roman", Times, serif;
+  font-size: clamp(54px, 9vw, 104px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.92);
+
+  will-change: transform, opacity;
+}
+
+/* Subtitle at ~70% from top */
+.welcomeSubtitle {
+  position: absolute;
+  top: 70vh;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.98);
+  opacity: 0;
+
+  font-size: clamp(14px, 2.4vw, 18px);
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: rgba(255,255,255,0.72);
+
+  will-change: transform, opacity;
+}
+
+/* Login at ~80% from top, centered below subtitle */
+.welcomeLogin {
+  position: absolute;
+  top: 80vh;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.98);
+  opacity: 0;
+
+  pointer-events: auto; /* clickable */
+
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.88);
+
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+
+  will-change: transform, opacity;
+}
+
+/* Reveal animation: fade in + slight zoom (20% from 0.84 -> 1.00 feel) */
+.welcomeTitle.is-in,
+.welcomeSubtitle.is-in,
+.welcomeLogin.is-in {
+  animation: welcomeFadeZoom 700ms ease-out forwards;
+}
+
+@keyframes welcomeFadeZoom {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.84); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .welcomeTitle.is-in,
+  .welcomeSubtitle.is-in,
+  .welcomeLogin.is-in {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+
+/* =========================
+   AUTH STATIC BACKGROUND
+   ========================= */
+
+body.auth-bg{
+  overflow: hidden;
+  height: 100vh;
+
+  background-image: var(--authBgUrl);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* readability veil */
+body.auth-bg::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(900px 520px at 50% 20%, rgba(0,0,0,0.20), rgba(0,0,0,0.72));
+}
+
+/* make sure app content sits above overlay */
+#app{
+  position: relative;
+  z-index: 1;
+}
+
+
+/* =========================
+   AUTH (common, borderless, background-friendly)
+   Applies to: authLanding / authEmail / authPassword / authCreatePassword
+   ========================= */
+
+/* Keep the existing auth background you already have (auth-bg). */
+/* We do NOT add any new black overlay here. */
+
+.authWrap{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 18px 16px 90px;
+  position: relative;
+}
+
+/* Back link — no pill, no border */
+.authBack{
+  position: absolute;
+  top: 14px;
+  left: 14px;
+
+  background: transparent;
+  border: 0;
+  padding: 0;
+
+  color: rgba(255,255,255,0.72);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.authBack:hover{
+  color: rgba(255,255,255,0.92);
+}
+
+/* Main block: no card, no border */
+.authBlock{
+  width: min(420px, 92vw);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+
+/* Title style (same across pages) */
+.authTitle{
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.78);
+  margin-bottom: 2px;
+}
+
+/* Stack of controls */
+.authStack{
+  width: 100%;
+  display: grid;
+  gap: 12px;
+}
+
+/* Borderless glass buttons (no outline border) */
+.authBtn{
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.92);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.authBtn:hover{
+  background: rgba(0,0,0,0.30);
+  border-color: rgba(255,255,255,0.28);
+}
+
+.authBtn:active{
+  transform: translateY(1px);
+}
+
+/* Icons */
+.authIcon{
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.authIcon--mono{
+  fill: rgba(255,255,255,0.86);
+}
+
+/* Keep signed in */
+.authCheck{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.78);
+  font-size: 14px;
+  padding: 4px 2px;
+}
+
+.authCheck input{
+  accent-color: #0066ff;
+}
+
+/* Messages */
+.authMsg{
+  min-height: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.72);
+}
+
+
+
+
+
+
+
+/* =========================
+   USER HOME (separate from AUTH styles)
+   ========================= */
+
+.userWrap{
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  padding: 36px 16px 30px; /* top spacing you can tune */
+}
+
+
+.userHero{
+  width: min(520px, 92vw);
+  text-align: center;
+  display: grid;
+  gap: 10px;
+
+  margin-top: 8px; /* keeps it breathing at the top */
+}
+
+
+.userName{
+  font-family: "Times New Roman", Times, serif;
+  font-size: clamp(46px, 9vw, 88px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: rgba(255,255,255,0.92);
+}
+
+.userPrompt{
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.72);
+}

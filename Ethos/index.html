@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- OPTION A (recommended): allow zoom, prevent iOS auto-zoom via CSS -->
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0" /> -->
+
+    <!-- OPTION B (strict): disable zoom completely (accessibility tradeoff) -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
     <title>Ethos</title>
   </head>
   <body>

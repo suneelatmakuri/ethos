@@ -1,6 +1,8 @@
 // src/main.js
 import "./styles/base.css";
 
+import { welcomePage } from "./pages/welcome.js";
+
 import { observeAuth } from "./lib/auth.js";
 import { getUserProfile, normalizeUserProfile } from "./lib/db.js";
 import { applyThemeFromProfile } from "./lib/theme.js";
@@ -40,7 +42,7 @@ let authResolved = false;
 let normalizedForUid = null;
 
 function isPublicRoute(path) {
-  return path.startsWith("#/auth");
+  return path === "#/welcome" || path.startsWith("#/auth");
 }
 
 function isProtectedRoute(path) {
@@ -78,6 +80,8 @@ function getRenderer(path) {
 
   switch (base) {
     // Public
+    case "#/welcome":
+      return welcomePage;
     case "#/auth":
       return authLandingPage;
     case "#/auth/email":
@@ -92,7 +96,7 @@ function getRenderer(path) {
       return () => profileSetupPage({ user: currentUser });
 
     case "#/home":
-      return homePage;
+      return () => homePage({ user: currentUser, profile: currentProfile });
 
     case "#/today":
       return () => todayPage({ user: currentUser, profile: currentProfile });
@@ -160,18 +164,23 @@ async function renderApp() {
 
     // Default route if hash is empty
     if (!path) {
-      navigate("#/auth");
+      navigate("#/welcome");
       return;
     }
 
     // Not signed in → allow only auth routes
     if (!currentUser) {
-      if (!isPublicRoute(path)) navigate("#/auth");
+      // Public background applies to welcome + auth pages
+      document.body.classList.add("public-bg");
+
+      if (!isPublicRoute(path)) navigate("#/welcome");
+
       const { path: finalPath } = getRoute();
-      const fn = getRenderer(finalPath) || authLandingPage;
+      const fn = getRenderer(finalPath) || welcomePage;
       fn();
       return;
     }
+
 
     // Signed in → load profile
     await ensureProfileLoaded();
@@ -238,6 +247,11 @@ startRouter(renderApp);
 // Auth observer is the “true” bootstrap
 observeAuth(async (user) => {
   currentUser = user || null;
+    if (currentUser) {
+      document.body.classList.remove("public-bg");
+      document.body.style.removeProperty("--publicBgUrl");
+    }
+
   authResolved = true;
 
   // Reset profile cache when auth changes

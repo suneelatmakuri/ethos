@@ -2,6 +2,14 @@
 import { createUserProfile } from "../lib/db.js";
 import { navigate } from "../router.js";
 
+const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
+
+function applyAuthBg() {
+  document.body.classList.remove("welcome-mode");
+  document.body.classList.add("auth-bg");
+  document.body.style.setProperty("--authBgUrl", `url("${AUTH_BG}")`);
+}
+
 function getTimezones() {
   // Modern browsers
   if (typeof Intl !== "undefined" && typeof Intl.supportedValuesOf === "function") {
@@ -24,33 +32,34 @@ function getTimezones() {
 }
 
 export function profileSetupPage({ user }) {
+  applyAuthBg();
+
   const root = document.getElementById("app");
   const tzList = getTimezones();
   const guessTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata";
 
   root.innerHTML = `
-    <div class="center">
-      <h2>Set up your profile</h2>
-      <p class="muted">This helps Ethos keep your days aligned to your timezone.</p>
+    <div class="authWrap">
+      <a class="authBack" href="#/auth">← Back</a>
 
-      <div class="stack">
-        <label class="label">Display name</label>
-        <input id="name" class="input" type="text" placeholder="What should we call you?" />
+      <div class="authBlock">
+        <div class="authTitle">PROFILE</div>
 
-        <label class="label">Date of birth</label>
-        <input id="dob" class="input" type="date" />
+        <div class="authStack">
+          <input id="name" class="input" type="text" placeholder="Display name (optional)" autocomplete="name" />
+          <input id="dob" class="input" type="date" />
 
-        <label class="label">Timezone</label>
-        <select id="tz" class="input">
-          ${tzList
-            .map((tz) => `<option value="${tz}" ${tz === guessTz ? "selected" : ""}>${tz}</option>`)
-            .join("")}
-        </select>
+          <select id="tz" class="input">
+            ${tzList
+              .map((tz) => `<option value="${tz}" ${tz === guessTz ? "selected" : ""}>${tz}</option>`)
+              .join("")}
+          </select>
 
-        <button id="save" class="btn primary">Save</button>
+          <button id="save" class="authBtn" type="button">Save</button>
+
+          <div id="msg" class="authMsg"></div>
+        </div>
       </div>
-
-      <div id="msg" class="muted" style="margin-top:12px;"></div>
     </div>
   `;
 
@@ -85,7 +94,8 @@ export function profileSetupPage({ user }) {
         role: "user",
       });
 
-      navigate("#/home");
+      window.location.hash = "#/home";
+      window.location.reload();
     } catch (e) {
       setMsg(e?.message || "Could not save profile.");
     }

@@ -1,35 +1,55 @@
 // src/pages/authPassword.js
 import { signInWithEmailPassword, sendPasswordReset } from "../lib/auth.js";
-import { getRoute, navigate } from "../router.js";
+import { getRoute } from "../router.js";
+
+const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
+
+function applyAuthBg() {
+  document.body.classList.remove("welcome-mode");
+  document.body.classList.add("auth-bg");
+  document.body.style.setProperty("--authBgUrl", `url("${AUTH_BG}")`);
+}
 
 export function authPasswordPage() {
+  applyAuthBg();
+
   const root = document.getElementById("app");
   const { query } = getRoute();
   const email = String(query.get("email") || "").trim().toLowerCase();
+
   const saved = localStorage.getItem("ethos_keepSignedIn");
   const defaultPersist = saved === null ? true : saved === "true";
 
-
   root.innerHTML = `
-    <div class="center">
-      <h2>Welcome back</h2>
-      <p class="muted">${email ? `Signing in as ${email}` : "Enter your password to continue."}</p>
+    <div class="authWrap">
+      <a class="authBack" href="#/auth/email">← Back</a>
 
-      <div class="stack">
-        <input id="password" class="input" type="password" placeholder="Password" autocomplete="current-password" />
-        
-        <label class="check">
-          <input id="persist" type="checkbox" ${defaultPersist ? "checked" : ""} />
-          <span>Keep me signed in</span>
-        </label>
+      <div class="authBlock">
+        <div class="authTitle">LOGIN</div>
 
-        <button id="login" class="btn primary">Sign in</button>
+        <div class="authStack">
+          <input id="password" class="input" type="password" placeholder="Password" autocomplete="current-password" />
 
-        <button id="forgot" class="btn ghost">Forgot password?</button>
-        <a class="link" href="#/auth/email">← Use a different email</a>
+          <label class="authCheck">
+            <input id="persist" type="checkbox" ${defaultPersist ? "checked" : ""} />
+            <span>Keep me signed in</span>
+          </label>
+
+          <button id="login" class="authBtn" type="button">Sign in</button>
+
+          <button id="forgot" type="button"
+            style="background:transparent;border:0;color:rgba(255,255,255,0.72);cursor:pointer;justify-self:center;">
+            Forgot password?
+          </button>
+
+          <a href="#/auth/email"
+            style="color:rgba(255,255,255,0.72);text-decoration:none;justify-self:center;">
+            ← Use a different email
+          </a>
+
+          <div id="msg" class="authMsg"></div>
+        </div>
       </div>
-
-      <div id="msg" class="muted" style="margin-top:12px;"></div>
     </div>
   `;
 

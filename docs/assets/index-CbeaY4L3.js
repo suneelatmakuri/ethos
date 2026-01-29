@@ -221,7 +221,7 @@ This typically indicates that your device does not have a healthy Internet conne
 
       ${MT({active:e})}
     </div>
-  `}const xT="/ethos/assets/home-bg.png";function UT(){document.body.classList.remove("welcome-mode"),document.body.classList.remove("auth-bg"),document.body.style.removeProperty("--authBgUrl"),document.body.style.removeProperty("--publicBgUrl"),document.body.classList.add("home-bg"),document.body.style.setProperty("--homeBgUrl",`url("${xT}")`)}function FT(n,e){const t=(e?.displayName||"").trim();if(t)return t;const r=(n?.displayName||"").trim();if(r)return r;const s=(n?.email||"").trim();return s&&s.includes("@")?s.split("@")[0]:"there"}function Ss({user:n,profile:e}){UT();const t=FT(n,e),r=document.getElementById("app");r.innerHTML=_e({title:"Home",activeTab:"home",content:`
+  `}const xT="/ethos/assets/auth-bg.png";function UT(){document.body.classList.remove("welcome-mode"),document.body.classList.remove("auth-bg"),document.body.style.removeProperty("--authBgUrl"),document.body.style.removeProperty("--publicBgUrl"),document.body.classList.add("home-bg"),document.body.style.setProperty("--homeBgUrl",`url("${xT}")`)}function FT(n,e){const t=(e?.displayName||"").trim();if(t)return t;const r=(n?.displayName||"").trim();if(r)return r;const s=(n?.email||"").trim();return s&&s.includes("@")?s.split("@")[0]:"there"}function Ss({user:n,profile:e}){UT();const t=FT(n,e),r=document.getElementById("app");r.innerHTML=_e({title:"Home",activeTab:"home",content:`
       <section class="userWrap">
         <div class="userHero">
           <div class="userName">${BT(t)}</div>

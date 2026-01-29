@@ -2,7 +2,7 @@
 import { Shell } from "../components/shell.js";
 
 // const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
-const HOME_BG = `${import.meta.env.BASE_URL}assets/home-bg.png`;
+const HOME_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
 
 function applyHomeBg() {
   // REMOVE any previous modes

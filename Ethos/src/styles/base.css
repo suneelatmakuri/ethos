@@ -917,3 +917,18 @@ body.auth-bg::before{
   text-transform: uppercase;
   color: rgba(255,255,255,0.72);
 }
+
+/* =========================
+   HOME BACKGROUND (scroll-safe)
+   ========================= */
+
+body.home-bg{
+  overflow-y: auto;     /* IMPORTANT */
+  height: auto;
+
+  background-image: var(--homeBgUrl);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}

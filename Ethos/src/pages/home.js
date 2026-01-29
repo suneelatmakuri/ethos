@@ -1,12 +1,21 @@
 // src/pages/home.js
 import { Shell } from "../components/shell.js";
 
-const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
+// const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
+const HOME_BG = `${import.meta.env.BASE_URL}assets/home-bg.png`;
 
 function applyHomeBg() {
-  // Keep the same background vibe from auth pages
-  document.body.classList.add("auth-bg");
-  document.body.style.setProperty("--authBgUrl", `url("${AUTH_BG}")`);
+  // REMOVE any previous modes
+  document.body.classList.remove("welcome-mode");
+  document.body.classList.remove("auth-bg");
+
+  // clean leftover vars
+  document.body.style.removeProperty("--authBgUrl");
+  document.body.style.removeProperty("--publicBgUrl");
+
+  // APPLY home mode
+  document.body.classList.add("home-bg");
+  document.body.style.setProperty("--homeBgUrl", `url("${HOME_BG}")`);
 }
 
 function pickName(user, profile) {

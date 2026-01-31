@@ -932,3 +932,163 @@ body.home-bg{
   background-position: center;
   background-attachment: fixed;
 }
+
+
+/* =========================================
+   Templates page (namespace: tt-*)
+   ========================================= */
+
+.tt-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Group has NO enclosure */
+.tt-group {
+  padding: 0;
+  margin: 0;
+}
+
+/* Category header with divider line */
+.tt-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 2px 10px 2px;
+}
+
+.tt-hTitle {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  opacity: 0.95;
+}
+
+.tt-divider {
+  height: 1px;
+  flex: 1;
+  opacity: 0.65;
+  background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02));
+  border-radius: 999px;
+}
+
+/* Category accent variants (for divider + title tint) */
+.tt-cat1 .tt-hTitle { color: rgba(120, 180, 255, 0.85); }
+.tt-cat1 .tt-divider { background: linear-gradient(90deg, rgba(120,180,255,0.45), rgba(255,255,255,0.02)); }
+
+.tt-cat2 .tt-hTitle { color: rgba(140, 255, 210, 0.8); }
+.tt-cat2 .tt-divider { background: linear-gradient(90deg, rgba(140,255,210,0.40), rgba(255,255,255,0.02)); }
+
+.tt-cat3 .tt-hTitle { color: rgba(200, 160, 255, 0.8); }
+.tt-cat3 .tt-divider { background: linear-gradient(90deg, rgba(200,160,255,0.42), rgba(255,255,255,0.02)); }
+
+.tt-cat4 .tt-hTitle { color: rgba(255, 170, 170, 0.78); }
+.tt-cat4 .tt-divider { background: linear-gradient(90deg, rgba(255,170,170,0.38), rgba(255,255,255,0.02)); }
+
+.tt-cat5 .tt-hTitle { color: rgba(255, 205, 140, 0.78); }
+.tt-cat5 .tt-divider { background: linear-gradient(90deg, rgba(255,205,140,0.35), rgba(255,255,255,0.02)); }
+
+.tt-cat6 .tt-hTitle { color: rgba(190, 190, 190, 0.72); }
+.tt-cat6 .tt-divider { background: linear-gradient(90deg, rgba(190,190,190,0.30), rgba(255,255,255,0.02)); }
+
+/* Grid */
+.tt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+/* Tiles */
+.tt-tile {
+  position: relative;
+  padding: 14px;
+  border-radius: 16px;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--tt-bg);
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.tt-tile:active { transform: scale(0.985); }
+
+@media (hover:hover) {
+  .tt-tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.16);
+  }
+}
+
+/* Icon block uses icon color set by gradient */
+.tt-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tt-icon-color);
+  margin-bottom: 10px;
+}
+
+/* Title + footer */
+.tt-title {
+  font-weight: 650;
+  font-size: 18px;
+  line-height: 1.15;
+  margin-bottom: 8px;
+  letter-spacing: 0.2px;
+}
+
+.tt-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* =====================
+   Tile gradients (6)
+   ===================== */
+.tt-g1 { --tt-bg: linear-gradient(135deg, rgba(30,60,114,0.65), rgba(42,82,152,0.35)); --tt-icon-color: rgba(127,179,255,0.95); }
+.tt-g2 { --tt-bg: linear-gradient(135deg, rgba(19,78,94,0.65), rgba(113,178,128,0.30)); --tt-icon-color: rgba(127,224,195,0.95); }
+.tt-g3 { --tt-bg: linear-gradient(135deg, rgba(66,39,90,0.70), rgba(115,75,109,0.35)); --tt-icon-color: rgba(199,166,255,0.95); }
+.tt-g4 { --tt-bg: linear-gradient(135deg, rgba(44,62,80,0.65), rgba(52,73,94,0.35)); --tt-icon-color: rgba(170,200,255,0.85); }
+.tt-g5 { --tt-bg: linear-gradient(135deg, rgba(58,28,113,0.65), rgba(215,109,119,0.30)); --tt-icon-color: rgba(255,180,180,0.92); }
+.tt-g6 { --tt-bg: linear-gradient(135deg, rgba(30,30,30,0.70), rgba(70,70,70,0.30)); --tt-icon-color: rgba(215,215,215,0.85); }
+/* New gradients (more distinct, still dark) */
+.tt-g7  { --tt-bg: linear-gradient(135deg, rgba(18,32,48,0.72), rgba(40,18,58,0.36)); --tt-icon-color: rgba(190,160,255,0.95); }
+.tt-g8  { --tt-bg: linear-gradient(135deg, rgba(54,24,24,0.70), rgba(120,54,24,0.30)); --tt-icon-color: rgba(255,190,140,0.95); }
+.tt-g9  { --tt-bg: linear-gradient(135deg, rgba(16,45,40,0.72), rgba(18,72,92,0.30)); --tt-icon-color: rgba(140,255,230,0.95); }
+.tt-g10 { --tt-bg: linear-gradient(135deg, rgba(30,20,55,0.72), rgba(95,35,85,0.30)); --tt-icon-color: rgba(255,170,255,0.92); }
+.tt-g11 { --tt-bg: linear-gradient(135deg, rgba(22,28,38,0.76), rgba(22,58,38,0.30)); --tt-icon-color: rgba(170,255,190,0.90); }
+.tt-g12 { --tt-bg: linear-gradient(135deg, rgba(24,24,28,0.76), rgba(50,70,95,0.30)); --tt-icon-color: rgba(170,210,255,0.92); }
+
+
+/* --- iOS/Safari: force template tile text colors --- */
+.tt-tile {
+  color: rgba(255,255,255,0.92);        /* forces white-ish everywhere */
+  -webkit-text-fill-color: rgba(255,255,255,0.92); /* extra iOS safety */
+}
+
+.tt-title {
+  color: rgba(255,255,255,0.95);
+  -webkit-text-fill-color: rgba(255,255,255,0.95);
+}
+
+/* keep footer muted but NOT blue */
+.tt-footer, .tt-cadence, .tt-type {
+  color: rgba(255,255,255,0.65);
+  -webkit-text-fill-color: rgba(255,255,255,0.65);
+}
+
+/* ensure icon color keeps using gradient-defined variable */
+.tt-icon {
+  color: var(--tt-icon-color);
+  -webkit-text-fill-color: var(--tt-icon-color);
+}
+
+/* Optional: remove iOS tap highlight */
+.tt-tile {
+  -webkit-tap-highlight-color: transparent;
+}

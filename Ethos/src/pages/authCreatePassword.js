@@ -53,6 +53,8 @@ export function authCreatePasswordPage() {
     msgEl.textContent = t || "";
   }
 
+  if (!email) setMsg("Missing email. Go back and enter your email again.");
+
   async function onCreate() {
     localStorage.setItem("ethos_keepSignedIn", String(persistEl.checked));
     setMsg("");
@@ -75,14 +77,20 @@ export function authCreatePasswordPage() {
       // auth gate will route to profile-setup because Firestore profile missing
     } catch (e) {
       const code = e?.code || "";
-      if (
-        code === "auth/email-already-in-use" ||
-        code === "auth/account-exists-with-different-credential"
-      ) {
-        setMsg("This email is already linked to a different sign-in method. Try Google sign-in.");
+
+      // ✅ If already exists, send to password page
+      if (code === "auth/email-already-in-use") {
+        setMsg("Account already exists. Please sign in.");
+        navigate(`#/auth/password?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      if (code === "auth/account-exists-with-different-credential") {
+        setMsg("This email is linked to Google sign-in.");
         navigate(`#/auth/email`);
         return;
       }
+
       setMsg(e?.message || "Account creation failed.");
     }
   }

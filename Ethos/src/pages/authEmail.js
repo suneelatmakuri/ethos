@@ -1,5 +1,5 @@
 // src/pages/authEmail.js
-import { getEmailMethods, signInWithGoogle } from "../lib/auth.js";
+import { signInWithGoogle } from "../lib/auth.js";
 import { navigate } from "../router.js";
 
 const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
@@ -34,19 +34,22 @@ export function authEmailPage() {
         <div class="authStack">
           <input id="email" class="input" type="email" placeholder="you@example.com" autocomplete="email" />
 
-          <button id="next" class="authBtn" type="button">
-            <span>Next</span>
-            <span aria-hidden="true" style="opacity:.8;margin-left:2px;">→</span>
-          </button>
+          <div style="display:flex; gap:10px;">
+            <button id="loginBtn" class="authBtn" type="button" style="flex:1;">
+              <span>Login</span>
+            </button>
+
+            <button id="registerBtn" class="authBtn" type="button" style="flex:1;">
+              <span>Register</span>
+            </button>
+          </div>
 
           <div id="msg" class="authMsg"></div>
 
-          <div id="googleHint" style="display:none;">
-            <button id="googleBtn" class="authBtn" type="button">
-              ${GOOGLE_ICON}
-              <span>Continue with Google</span>
-            </button>
-          </div>
+          <button id="googleBtn" class="authBtn" type="button">
+            ${GOOGLE_ICON}
+            <span>Continue with Google</span>
+          </button>
         </div>
       </div>
     </div>
@@ -54,61 +57,48 @@ export function authEmailPage() {
 
   const emailEl = root.querySelector("#email");
   const msgEl = root.querySelector("#msg");
-  const googleHintEl = root.querySelector("#googleHint");
 
   function setMsg(text) {
     msgEl.textContent = text || "";
   }
 
-  async function onNext() {
-    const email = String(emailEl.value || "").trim().toLowerCase();
-    setMsg("");
-    googleHintEl.style.display = "none";
+  function getEmail() {
+    return String(emailEl.value || "").trim().toLowerCase();
+  }
 
+  function goLogin() {
+    const email = getEmail();
+    setMsg("");
     if (!email) {
       setMsg("Please enter an email.");
       return;
     }
-
-    try {
-      const methods = await getEmailMethods(email);
-
-      if (!methods || methods.length === 0) {
-        navigate(`#/auth/create-password?email=${encodeURIComponent(email)}`);
-        return;
-      }
-
-      const hasGoogle = methods.includes("google.com");
-      const hasPassword = methods.includes("password");
-
-      if (hasGoogle && !hasPassword) {
-        setMsg("This email is linked to Google sign-in.");
-        googleHintEl.style.display = "block";
-        return;
-      }
-
-      if (hasPassword) {
-        navigate(`#/auth/password?email=${encodeURIComponent(email)}`);
-        return;
-      }
-
-      setMsg("This email uses a different sign-in method. Try Google sign-in.");
-      googleHintEl.style.display = "block";
-    } catch (e) {
-      setMsg(e?.message || "Could not check sign-in method.");
-    }
+    navigate(`#/auth/password?email=${encodeURIComponent(email)}`);
   }
 
-  root.querySelector("#next").addEventListener("click", onNext);
+  function goRegister() {
+    const email = getEmail();
+    setMsg("");
+    if (!email) {
+      setMsg("Please enter an email.");
+      return;
+    }
+    navigate(`#/auth/create-password?email=${encodeURIComponent(email)}`);
+  }
+
+  root.querySelector("#loginBtn").addEventListener("click", goLogin);
+  root.querySelector("#registerBtn").addEventListener("click", goRegister);
+
+  // Enter key defaults to Login (less surprising)
   emailEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") onNext();
+    if (e.key === "Enter") goLogin();
   });
 
   root.querySelector("#googleBtn").addEventListener("click", async () => {
     try {
       await signInWithGoogle();
     } catch (e) {
-      setMsg(e?.message || "Google sign-in failed");
+      setMsg(e?.message || "Google sign-in failed.");
     }
   });
 }

@@ -31,7 +31,7 @@ function pickName(user, profile) {
   return "there";
 }
 
-export function homePage({ user, profile }) {
+export function homePage({ user, profile } = {}) {
   applyHomeBg();
 
   const name = pickName(user, profile);

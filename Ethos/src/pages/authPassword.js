@@ -1,6 +1,6 @@
 // src/pages/authPassword.js
 import { signInWithEmailPassword, sendPasswordReset } from "../lib/auth.js";
-import { getRoute } from "../router.js";
+import { getRoute, navigate } from "../router.js";
 
 const AUTH_BG = `${import.meta.env.BASE_URL}assets/auth-bg.png`;
 
@@ -78,6 +78,25 @@ export function authPasswordPage() {
       await signInWithEmailPassword(email, password, persistEl.checked);
       // auth gate will redirect
     } catch (e) {
+      const code = e?.code || "";
+
+      // ✅ If user doesn't exist, send them to registration flow
+      if (code === "auth/user-not-found") {
+        setMsg("Account not found. Create an account instead.");
+        navigate(`#/auth/create-password?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      if (code === "auth/wrong-password") {
+        setMsg("Incorrect password.");
+        return;
+      }
+
+      if (code === "auth/too-many-requests") {
+        setMsg("Too many attempts. Try again later.");
+        return;
+      }
+
       setMsg(e?.message || "Sign-in failed.");
     }
   }

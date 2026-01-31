@@ -60,17 +60,16 @@ import {
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   }
   
-  // ---------- Profile updates ----------
-  export async function updateProfile(uid, patch) {
-    const ref = doc(db, "users", uid);
-    await updateDoc(ref, { ...patch, updatedAt: serverTimestamp() });
-  }
-  
   // ---------- Track CRUD ----------
   export async function createTrack(uid, track) {
     const ref = doc(collection(db, "users", uid, "tracks"));
     await setDoc(ref, {
       ...track,
+      // Optional metadata (safe to ignore everywhere else)
+      meta: {
+        ...(track.meta ?? {}),
+        createdBy: track.meta?.createdBy ?? uid,
+      },
       isActive: track.isActive ?? true,
       sortOrder: track.sortOrder ?? Date.now(),
       createdAt: serverTimestamp(),
@@ -87,6 +86,83 @@ import {
   export async function deleteTrack(uid, trackId) {
     const ref = doc(db, "users", uid, "tracks", trackId);
     await deleteDoc(ref);
+  }
+
+  // ---------- Global Track Templates (top-level collection) ----------
+  /**
+   * Deterministic key used to de-dupe templates.
+   * Keep this stable: changing it later will create duplicates.
+   */
+  export function computeNormalizedKey(trackLike) {
+    const norm = (v) =>
+      String(v ?? "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+
+    // IMPORTANT: We intentionally exclude fields that shouldn't affect template identity.
+    // We include cadence here only to reduce accidental collisions for now.
+    // Leaderboard identity will still be based on templateId (not cadence).
+    const base = {
+      name: norm(trackLike?.name),
+      type: String(trackLike?.type ?? ""),
+      unit: norm(trackLike?.unit),
+      cadence: String(trackLike?.cadence ?? ""),
+      target: trackLike?.target ?? null,
+      config: trackLike?.config ?? {},
+    };
+
+    return JSON.stringify(base);
+  }
+
+  export async function readTrackTemplates() {
+    const ref = collection(db, "trackTemplates");
+    const snap = await getDocs(ref);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  }
+
+  /**
+   * Create a template if it doesn't already exist, otherwise reuse the existing one.
+   * Returns: templateId (string)
+   */
+  export async function upsertTrackTemplate({
+    track,
+    createdBy,
+    createdByName = null,
+    category = null,
+  }) {
+    const normalizedKey = computeNormalizedKey(track);
+
+    const q = query(
+      collection(db, "trackTemplates"),
+      where("normalizedKey", "==", normalizedKey),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      return snap.docs[0].id;
+    }
+
+    const ref = doc(collection(db, "trackTemplates"));
+
+    await setDoc(ref, {
+      name: track.name ?? "",
+      displayLabel: track.displayLabel ?? track.name ?? "",
+      type: track.type ?? "",
+      cadence: track.cadence ?? "daily",
+      unit: track.unit ?? "",
+      target: track.target ?? null,
+      config: track.config ?? {},
+      category: category ?? null,
+      createdBy: createdBy ?? null,
+      createdByName: createdByName ?? null,
+      normalizedKey,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return ref.id;
   }
   
   // ---------- Seed defaults ----------
@@ -172,6 +248,7 @@ import {
       createdAt: serverTimestamp(),
     });
   
+    
     const dRef = dayRef(uid, dayKey);
     batch.set(dRef, baseDayUpsert(dayKey, timeZone), { merge: true });
   
@@ -181,7 +258,6 @@ import {
       {
         [`${prefix}.type`]: "BOOLEAN",
         [`${prefix}.done`]: !!value,
-        [`${prefix}.count`]: !!value ? 1 : 0,
         [`${prefix}.lastAt`]: serverTimestamp(),
       },
       { merge: true }
@@ -190,13 +266,13 @@ import {
     await batch.commit();
   }
   
-  export async function addBooleanCount(uid, dayKey, timeZone, trackId, deltaCount = 1) {
+  export async function addBooleanCount(uid, dayKey, timeZone, trackId, delta = 1) {
     const batch = writeBatch(db);
     const entryRef = doc(entriesCol(uid, dayKey));
     batch.set(entryRef, {
       trackId,
       type: "BOOLEAN",
-      deltaCount,
+      deltaValue: delta,
       createdAt: serverTimestamp(),
     });
   
@@ -208,8 +284,8 @@ import {
       dRef,
       {
         [`${prefix}.type`]: "BOOLEAN",
-        [`${prefix}.count`]: increment(deltaCount),
-        [`${prefix}.done`]: true,
+        [`${prefix}.count`]: increment(1),
+        [`${prefix}.sum`]: increment(delta),
         [`${prefix}.lastAt`]: serverTimestamp(),
       },
       { merge: true }
@@ -218,13 +294,13 @@ import {
     await batch.commit();
   }
   
-  export async function replaceNumber(uid, dayKey, timeZone, trackId, value) {
+  export async function setNumberReplace(uid, dayKey, timeZone, trackId, value) {
     const batch = writeBatch(db);
     const entryRef = doc(entriesCol(uid, dayKey));
     batch.set(entryRef, {
       trackId,
       type: "NUMBER_REPLACE",
-      value,
+      value: Number(value),
       createdAt: serverTimestamp(),
     });
   
@@ -236,7 +312,7 @@ import {
       dRef,
       {
         [`${prefix}.type`]: "NUMBER_REPLACE",
-        [`${prefix}.value`]: value,
+        [`${prefix}.value`]: Number(value),
         [`${prefix}.lastAt`]: serverTimestamp(),
       },
       { merge: true }
@@ -245,13 +321,13 @@ import {
     await batch.commit();
   }
   
-  export async function appendText(uid, dayKey, timeZone, trackId, text) {
+  export async function addTextAppend(uid, dayKey, timeZone, trackId, text) {
     const batch = writeBatch(db);
     const entryRef = doc(entriesCol(uid, dayKey));
     batch.set(entryRef, {
       trackId,
       type: "TEXT_APPEND",
-      text,
+      text: String(text ?? ""),
       createdAt: serverTimestamp(),
     });
   
@@ -264,7 +340,6 @@ import {
       {
         [`${prefix}.type`]: "TEXT_APPEND",
         [`${prefix}.count`]: increment(1),
-        [`${prefix}.preview`]: String(text).slice(0, 80),
         [`${prefix}.lastAt`]: serverTimestamp(),
       },
       { merge: true }
@@ -273,13 +348,13 @@ import {
     await batch.commit();
   }
   
-  export async function addDropdown(uid, dayKey, timeZone, trackId, optionId) {
+  export async function addDropdownEvent(uid, dayKey, timeZone, trackId, optionId) {
     const batch = writeBatch(db);
     const entryRef = doc(entriesCol(uid, dayKey));
     batch.set(entryRef, {
       trackId,
       type: "DROPDOWN_EVENT",
-      optionIds: [optionId],
+      optionId: String(optionId ?? ""),
       createdAt: serverTimestamp(),
     });
   
@@ -292,7 +367,6 @@ import {
       {
         [`${prefix}.type`]: "DROPDOWN_EVENT",
         [`${prefix}.count`]: increment(1),
-        [`${prefix}.lastValue`]: [optionId],
         [`${prefix}.lastAt`]: serverTimestamp(),
       },
       { merge: true }
@@ -300,4 +374,3 @@ import {
   
     await batch.commit();
   }
-  

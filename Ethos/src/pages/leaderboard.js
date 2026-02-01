@@ -1,191 +1,453 @@
+// src/pages/leaderboard.js
+
 import { Shell } from "../components/shell.js";
 
+import {
+  getUserProfile,
+  readAllTracks,
+  getLastDays,
+  getDayDoc,
+  computeNormalizedKey,
+} from "../lib/db.js";
+
+import { getDayKeyNow, getPeriodKeysForDayKey } from "../lib/time.js";
+
+import {
+  LEADERBOARD_PRIORITY,
+  LEADERBOARD_EXCLUDED_TYPES,
+} from "../config/ethosLeaderboardConfig.js";
+
+const PERIODS = [
+  { key: "today", label: "Today" },
+  { key: "week", label: "This Week" },
+  { key: "month", label: "This Month" },
+];
+
+const LB_ACCENT_CLASSES = [
+  "lb-acc1",
+  "lb-acc2",
+  "lb-acc3",
+  "lb-acc4",
+  "lb-acc5",
+  "lb-acc6",
+  "lb-acc7",
+  "lb-acc8",
+  "lb-acc9",
+];
+
+function pickAccentClassRandom() {
+  return (
+    LB_ACCENT_CLASSES[Math.floor(Math.random() * LB_ACCENT_CLASSES.length)] ||
+    "lb-acc1"
+  );
+}
+
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function safeNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function getUserTimeZone(profile) {
+  return profile?.preferences?.timeZone || profile?.timeZone || "Asia/Kolkata";
+}
+
+function isEligibleTrack(track) {
+  if (!track) return false;
+  if (!track.isActive) return false;
+  if (track.isPrivate) return false;
+  if (LEADERBOARD_EXCLUDED_TYPES?.has?.(track.type)) return false;
+  // belt + suspenders
+  if (track.type === "NUMBER_REPLACE") return false;
+  return true;
+}
+
+function normalizeLooseText(v) {
+  return String(v ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function stableStringify(obj) {
+  if (Array.isArray(obj)) return `[${obj.map(stableStringify).join(",")}]`;
+  if (obj && typeof obj === "object") {
+    return `{${Object.keys(obj)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(obj);
+}
+
 /**
- * EDIT THESE TWO ONLY
- * (ISO strings are safest because they preserve your timezone)
+ * comparableKey groups tracks across users.
+ * - ignore: cadence, target, config
+ * - match on: name, type, unit
  */
-const START_AT_ISO = "2026-01-23T00:00:00+05:30";
-const LAUNCH_AT_ISO = "2026-02-03T00:00:00+05:30";
-
-/**
- * Image path:
- * Use BASE_URL so it works in dev AND if your app base is not "/"
- * (Vite sets import.meta.env.BASE_URL)
- */
-const HERO_IMAGE_SRC = `${import.meta.env.BASE_URL}assets/leaderboard-construction.png`;
-
-// -------------------- helpers --------------------
-function clamp(n, a, b) {
-  return Math.min(b, Math.max(a, n));
+function comparableKeyFromNormalizedKeyString(normalizedKeyStr) {
+  if (!normalizedKeyStr) return null;
+  try {
+    const obj = JSON.parse(normalizedKeyStr);
+    const base = {
+      name: normalizeLooseText(obj?.name),
+      type: String(obj?.type ?? ""),
+      unit: normalizeLooseText(obj?.unit),
+    };
+    return stableStringify(base);
+  } catch {
+    return null;
+  }
 }
 
-function pad2(n) {
-  return String(Math.floor(n)).padStart(2, "0");
+function getNormalizedKeyString(track) {
+  // Preferred: stored meta.normalizedKey
+  const raw = track?.meta?.normalizedKey;
+  if (typeof raw === "string" && raw.trim()) return raw;
+
+  // Fallback: derive
+  return computeNormalizedKey({
+    name: track?.name,
+    type: track?.type,
+    unit: track?.unit,
+    cadence: track?.cadence,
+    target: track?.target ?? null,
+    config: track?.config ?? {},
+  });
 }
 
-function splitTime(ms) {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const minutes = Math.floor((totalSec % 3600) / 60);
-  const seconds = totalSec % 60;
-  return { days, hours, minutes, seconds };
+function labelForTrack(track) {
+  if (!track) return "";
+  if (track.type === "COUNTER_INCREMENT") return String(track.unit || "").trim();
+  if (track.type === "TEXT_APPEND") return "entries";
+  if (track.type === "DROPDOWN_EVENT") return "events";
+  if (track.type === "BOOLEAN") return "done";
+  return "";
 }
 
-function circleUnit(label, valueId, ringId) {
+function valueFromDayAgg(track, agg) {
+  if (!agg || !track) return 0;
+
+  if (track.type === "COUNTER_INCREMENT") return safeNum(agg.sum ?? agg.value);
+
+  if (track.type === "BOOLEAN") {
+    // count-mode boolean uses sum; done-only uses done
+    if (agg.sum !== undefined) return safeNum(agg.sum);
+    return agg.done === true ? 1 : 0;
+  }
+
+  if (track.type === "TEXT_APPEND") return safeNum(agg.count);
+  if (track.type === "DROPDOWN_EVENT") return safeNum(agg.count);
+
+  return 0;
+}
+
+function computePeriodTotal(
+  track,
+  days,
+  wantedDayKey,
+  wantedWeekKey,
+  wantedMonthKey,
+  period
+) {
+  if (!track) return 0;
+
+  if (period === "today") {
+    const d = (days || []).find((x) => x?.id === wantedDayKey);
+    const agg = d?.tracks?.[track.id];
+    return valueFromDayAgg(track, agg);
+  }
+
+  let total = 0;
+  for (const d of days || []) {
+    const dk = d?.id;
+    if (!dk) continue;
+    const p = d?.period || getPeriodKeysForDayKey(dk);
+    if (period === "week" && p.weekKey !== wantedWeekKey) continue;
+    if (period === "month" && p.monthKey !== wantedMonthKey) continue;
+    total += valueFromDayAgg(track, d?.tracks?.[track.id]);
+  }
+  return total;
+}
+
+function renderTabs(activeKey) {
   return `
-    <div class="lb-circleUnit">
-      <div class="lb-ring">
-        <svg class="lb-ringSvg" viewBox="0 0 120 120" aria-hidden="true">
-          <circle class="lb-ringTrack" cx="60" cy="60" r="48"></circle>
-          <circle class="lb-ringProg" id="${ringId}" cx="60" cy="60" r="48"></circle>
-        </svg>
-
-        <div class="lb-ringCenter">
-          <div class="lb-ringNum" id="${valueId}">--</div>
-          <div class="lb-ringLbl">${label}</div>
-        </div>
-      </div>
+    <div class="lb-tabs" role="tablist" aria-label="Leaderboard period">
+      ${PERIODS.map(
+        (p) => `
+          <button
+            type="button"
+            class="lb-tab ${p.key === activeKey ? "active" : ""}"
+            data-period="${p.key}"
+            role="tab"
+            aria-selected="${p.key === activeKey ? "true" : "false"}">
+            ${p.label}
+          </button>
+        `
+      ).join("")}
     </div>
   `;
 }
 
-function setRing(circleEl, fraction) {
-  if (!circleEl) return;
-  const r = 48;
-  const c = 2 * Math.PI * r;
-  const f = clamp(fraction, 0, 1);
-  circleEl.style.strokeDasharray = `${c}`;
-  circleEl.style.strokeDashoffset = `${c * (1 - f)}`;
+function renderEmpty() {
+  return `
+    <div class="lb-empty">
+      No shared tracks yet.
+      <div class="lb-emptySub">Add a track and ask a friend to enable the same one.</div>
+    </div>
+  `;
 }
 
-// -------------------- page --------------------
-export function leaderboardPage() {
-  // Kill any previous timer if user re-enters page
-  if (window.__ethosLeaderboardTimer) {
-    clearInterval(window.__ethosLeaderboardTimer);
-    window.__ethosLeaderboardTimer = null;
+function sortRowsForViewer(rows, viewerUid, nameMap) {
+  return [...rows].sort((a, b) => {
+    if (b.value !== a.value) return b.value - a.value;
+
+    // viewer gets moral priority within ties
+    if (a.uid === viewerUid && b.uid !== viewerUid) return -1;
+    if (b.uid === viewerUid && a.uid !== viewerUid) return 1;
+
+    const an = (nameMap[a.uid] || "").toLowerCase();
+    const bn = (nameMap[b.uid] || "").toLowerCase();
+    return an.localeCompare(bn);
+  });
+}
+
+function orderGroupKeys(groups, myTrackByKey) {
+  const wanted = [];
+
+  // priority first
+  for (const p of LEADERBOARD_PRIORITY || []) {
+    const ck = comparableKeyFromNormalizedKeyString(p?.normalizedKey);
+    if (ck && groups[ck] && myTrackByKey[ck]) wanted.push(ck);
   }
 
+  // remaining alphabetical by my track name
+  const rest = Object.keys(groups)
+    .filter((k) => !wanted.includes(k))
+    .sort((a, b) => {
+      const an = String(myTrackByKey[a]?.name || "");
+      const bn = String(myTrackByKey[b]?.name || "");
+      return an.localeCompare(bn);
+    });
+
+  return [...wanted, ...rest];
+}
+
+function buildSectionsHtml(groups, orderedKeys, viewerUid, nameMap, period) {
+  if (!orderedKeys.length) return renderEmpty();
+
+  return `
+    <div class="lb-list" data-period="${esc(period)}">
+      ${orderedKeys
+        .map((key) => {
+          const g = groups[key];
+          if (!g) return "";
+          const track = g.track;
+          const rows = sortRowsForViewer(g.rows, viewerUid, nameMap);
+          const winnerUid = rows[0]?.uid;
+          const accentClass = pickAccentClassRandom();
+          const unitLabel = esc(labelForTrack(track) || "");
+
+          return `
+            <section class="lb-section ${accentClass}">
+              <div class="lb-header">
+                <div class="lb-title">${esc(track?.name || "")}</div>
+                <div class="lb-divider"></div>
+                <div class="lb-unit">${unitLabel}</div>
+              </div>
+
+              <div class="lb-rows">
+                ${rows
+                  .map((r, idx) => {
+                    const nm = r.uid === viewerUid ? "You" : nameMap[r.uid] || "Friend";
+                    const isWinner = r.uid === winnerUid;
+                    const rowCls = `lb-row ${isWinner ? "leader" : ""}`;
+                    const rank = idx + 1;
+                    return `
+                      <div class="${rowCls}">
+                        <div class="lb-left">
+                          <div class="lb-rank">${rank}</div>
+                          <div class="lb-name">${esc(nm)}</div>
+                        </div>
+                        <div class="lb-val">${esc(r.value)}</div>
+                      </div>
+                    `;
+                  })
+                  .join("")}
+              </div>
+            </section>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+async function loadUserBundle(uid) {
+  const profile = await getUserProfile(uid);
+  const tz = getUserTimeZone(profile);
+
+  const tracks = await readAllTracks(uid);
+  const eligibleTracks = (tracks || []).filter(isEligibleTrack);
+
+  // days cache
+  const todayKey = getDayKeyNow(tz);
+  const days = await getLastDays(uid, 45);
+  const hasToday = (days || []).some((d) => d?.id === todayKey);
+  if (!hasToday) {
+    const todayDoc = await getDayDoc(uid, todayKey);
+    if (todayDoc) days.unshift({ id: todayKey, ...todayDoc });
+  }
+
+  const { weekKey, monthKey } = getPeriodKeysForDayKey(todayKey);
+
+  return {
+    uid,
+    profile,
+    tz,
+    todayKey,
+    weekKey,
+    monthKey,
+    tracks: eligibleTracks,
+    days,
+  };
+}
+
+function indexTracksByComparableKey(tracks) {
+  const index = {};
+  for (const t of tracks || []) {
+    const nk = getNormalizedKeyString(t);
+    const ck = comparableKeyFromNormalizedKeyString(nk);
+    if (!ck) continue;
+    if (!index[ck]) index[ck] = t;
+  }
+  return index;
+}
+
+function buildGroups(myIndex, friendIndexes, bundlesByUid, viewerUid, period) {
+  const groups = {};
+
+  for (const [ck, myTrack] of Object.entries(myIndex)) {
+    const participants = [];
+
+    // me
+    const myBundle = bundlesByUid[viewerUid];
+    const myTotal = computePeriodTotal(
+      myTrack,
+      myBundle.days,
+      myBundle.todayKey,
+      myBundle.weekKey,
+      myBundle.monthKey,
+      period
+    );
+    participants.push({ uid: viewerUid, value: myTotal });
+
+    // friends
+    let hasFriend = false;
+    for (const fUid of Object.keys(friendIndexes)) {
+      const t = friendIndexes[fUid]?.[ck];
+      if (!t) continue;
+      hasFriend = true;
+      const b = bundlesByUid[fUid];
+      const total = computePeriodTotal(t, b.days, b.todayKey, b.weekKey, b.monthKey, period);
+      participants.push({ uid: fUid, value: total });
+    }
+
+    if (!hasFriend) continue;
+    groups[ck] = { track: myTrack, rows: participants };
+  }
+
+  return groups;
+}
+
+/**
+ * Router passes a single object (often called ctx) to page functions.
+ * We accept it as ctx but only care about ctx.user + ctx.profile.
+ */
+export async function leaderboardPage(ctx) {
+  const { user, profile } = ctx || {};
   const root = document.getElementById("app");
 
+  // Ensure leaderboard has its own background (no carry-over from Home).
+  document.body.classList.add("lb-bg");
+  document.body.classList.remove("home-bg");
+
+  // initial scaffold
   root.innerHTML = Shell({
     title: "Leaderboard",
     activeTab: "leaderboard",
     content: `
-      <section class="lb-page">
-        <div class="card lb-card">
-          <div class="lb-wrap">
-            <div class="lb-title">
-              Leaderboard <span class="lb-soon">coming soon</span>
-            </div>
-
-            <div class="lb-sub muted">
-              We’re building this the calm way — clean, fair, and actually useful.
-            </div>
-
-            <div class="lb-hero">
-              <img class="lb-img" src="${HERO_IMAGE_SRC}" alt="Leaderboard under construction" />
-            </div>
-
-            <div class="lb-circles" aria-label="Countdown">
-              ${circleUnit("Days", "lbDays", "lbRingDays")}
-              ${circleUnit("Hours", "lbHours", "lbRingHours")}
-              ${circleUnit("Minutes", "lbMins", "lbRingMins")}
-              ${circleUnit("Seconds", "lbSecs", "lbRingSecs")}
-            </div>
-
-            <div class="lb-progress">
-              <div class="lb-progressTop">
-                <div class="lb-progressLabel">Build progress</div>
-                <div class="lb-progressPct" id="lbPct">0%</div>
-              </div>
-
-              <div class="lb-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-                <div class="lb-barFill" id="lbBarFill" style="width:0%"></div>
-              </div>
-
-              <div class="lb-meta muted" id="lbMeta"></div>
-            </div>
-          </div>
+      <div class="lb-wrap">
+        ${renderTabs("today")}
+        <div class="lb-body">
+          <div class="lb-loading">Loading…</div>
         </div>
-      </section>
+      </div>
     `,
   });
 
-  const elDays = document.getElementById("lbDays");
-  const elHours = document.getElementById("lbHours");
-  const elMins = document.getElementById("lbMins");
-  const elSecs = document.getElementById("lbSecs");
-
-  const ringDays = document.getElementById("lbRingDays");
-  const ringHours = document.getElementById("lbRingHours");
-  const ringMins = document.getElementById("lbRingMins");
-  const ringSecs = document.getElementById("lbRingSecs");
-
-  const elPct = document.getElementById("lbPct");
-  const elBarFill = document.getElementById("lbBarFill");
-  const elMeta = document.getElementById("lbMeta");
-
-  const startAt = new Date(START_AT_ISO).getTime();
-  const launchAt = new Date(LAUNCH_AT_ISO).getTime();
-
-  function tick() {
-    const now = Date.now();
-    const remaining = launchAt - now;
-
-    const { days, hours, minutes, seconds } = splitTime(remaining);
-
-    // numbers
-    elDays.textContent = String(days);
-    elHours.textContent = pad2(hours);
-    elMins.textContent = pad2(minutes);
-    elSecs.textContent = pad2(seconds);
-
-    // rings (match reference vibe)
-    setRing(ringHours, hours / 24);
-    setRing(ringMins, minutes / 60);
-    setRing(ringSecs, seconds / 60);
-
-    // days ring: show proportion of time left within a 30-day window feel (looks nice visually)
-    const daySpan = Math.max(1, Math.min(30, days + 1));
-    setRing(ringDays, 1 - days / daySpan);
-
-    // progress bar % (start -> launch)
-    const totalWindow = Math.max(1, launchAt - startAt);
-    const elapsed = now - startAt;
-    const pct = clamp((elapsed / totalWindow) * 100, 0, 100);
-
-    elPct.textContent = `${Math.round(pct)}%`;
-    elBarFill.style.width = `${pct}%`;
-
-    const launchPretty = new Date(launchAt).toLocaleString(undefined, {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    if (remaining <= 0) {
-      elMeta.textContent = `Should be live now. If it isn’t, it’s probably a deployment thing.`;
-      elDays.textContent = "0";
-      elHours.textContent = "00";
-      elMins.textContent = "00";
-      elSecs.textContent = "00";
-      elPct.textContent = "100%";
-      elBarFill.style.width = "100%";
-      setRing(ringDays, 1);
-      setRing(ringHours, 1);
-      setRing(ringMins, 1);
-      setRing(ringSecs, 1);
-      return;
-    }
-
-    elMeta.textContent = `Expected launch: ${launchPretty}`;
+  const viewerUid = user?.uid;
+  if (!viewerUid) {
+    root.querySelector(".lb-body").innerHTML = renderEmpty();
+    return;
   }
 
-  tick();
-  window.__ethosLeaderboardTimer = setInterval(tick, 1000);
+  const meProfile = profile || (await getUserProfile(viewerUid));
+  const friendUids = Array.from(new Set((meProfile?.friends || []).filter(Boolean)));
+  const allUids = [viewerUid, ...friendUids];
+
+  // Load bundles in parallel (small friend list; ok)
+  const bundles = await Promise.all(allUids.map(loadUserBundle));
+  const bundlesByUid = {};
+  for (const b of bundles) bundlesByUid[b.uid] = b;
+
+  // Name map from /users/{uid}.displayName
+  const nameMap = {};
+  for (const uid of allUids) {
+    const p = bundlesByUid[uid]?.profile;
+    nameMap[uid] = p?.displayName || "Friend";
+  }
+
+  const myIndex = indexTracksByComparableKey(bundlesByUid[viewerUid].tracks);
+  const friendIndexes = {};
+  for (const fUid of friendUids) {
+    friendIndexes[fUid] = indexTracksByComparableKey(bundlesByUid[fUid].tracks);
+  }
+
+  const myTrackByKey = myIndex;
+
+  function renderPeriod(period) {
+    const groups = buildGroups(myIndex, friendIndexes, bundlesByUid, viewerUid, period);
+    const orderedKeys = orderGroupKeys(groups, myTrackByKey);
+
+    const body = root.querySelector(".lb-body");
+    body.innerHTML = buildSectionsHtml(groups, orderedKeys, viewerUid, nameMap, period);
+  }
+
+  // Initial render
+  renderPeriod("today");
+
+  // Tab click handlers
+  const tabWrap = root.querySelector(".lb-tabs");
+  tabWrap?.addEventListener("click", (e) => {
+    const btn = e.target?.closest?.("button[data-period]");
+    if (!btn) return;
+    const p = btn.dataset.period;
+    if (!p) return;
+
+    // Update active styles
+    tabWrap.querySelectorAll(".lb-tab").forEach((b) => {
+      const isActive = b.dataset.period === p;
+      b.classList.toggle("active", isActive);
+      b.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+
+    renderPeriod(p);
+  });
 }

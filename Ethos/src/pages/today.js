@@ -16,15 +16,6 @@ function esc(s) {
     .replace(/>/g, "&gt;");
 }
 
-function renderBulletList(items) {
-  if (!items || !items.length) return "";
-  return `
-    <div class="bullets">
-      ${items.map((x) => `<div class="bullet">${x}</div>`).join("")}
-    </div>
-  `;
-}
-
 function safeTrackAgg(dayDoc, trackId) {
   return dayDoc?.tracks?.[trackId] || null;
 }
@@ -63,7 +54,6 @@ function computeRollups(tracks, lastDays, wantedWeekKey, wantedMonthKey) {
 
       if (t.cadence === "weekly" && wk !== wantedWeekKey) continue;
       if (t.cadence === "monthly" && mk !== wantedMonthKey) continue;
-      // yearly: no yearKey stored yet -> behaves like within lastDays window
 
       const a = day?.tracks?.[t.id];
       if (!a) continue;
@@ -102,36 +92,69 @@ function computeRollups(tracks, lastDays, wantedWeekKey, wantedMonthKey) {
   return rollups;
 }
 
-function renderSummaryCard(track, agg, rollup, ctx) {
+function parseDayKeyToUTCDate(dayKey) {
+  // dayKey: YYYY-MM-DD
+  const [y, m, d] = String(dayKey).split("-").map((x) => Number(x));
+  return new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+}
+
+function formatPrettyDate(dayKey, timeZone) {
+  const dt = parseDayKeyToUTCDate(dayKey);
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone,
+  }).format(dt);
+}
+
+function clamp01(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return 0;
+  return Math.max(0, Math.min(1, x));
+}
+
+function pickGradientClass() {
+  const n = 9; // td-g1..td-g9
+  const idx = 1 + Math.floor(Math.random() * n);
+  return `td-g${idx}`;
+}
+
+function computeCardModel(track, agg, rollup, ctx) {
   const cadence = track.cadence || "daily";
   const label = cadenceLabel(cadence);
 
   const targetVal = Number(track?.target?.value || 0);
+  const unit = (track.unit || "").trim();
+
   const src = cadence === "daily" ? agg : rollup;
 
-  const optMap = track.type === "DROPDOWN_EVENT" ? optionLabelMap(track) : null;
-
-  let primary = "—";
-  let rightMini = "";
-  let secondaryHtml = "";
+  let valueMain = "—";
+  let valueSub = ""; // unit text OR "events"/"entries"
+  let pct = 0;
+  let extraLines = [];
 
   if (track.type === "COUNTER_INCREMENT") {
     const sum = Number(src?.sum || 0);
-    primary = targetVal ? `${sum} / ${targetVal}` : `${sum}`;
-    rightMini = targetVal ? `${label} • Target ${targetVal}` : label;
+    valueMain = targetVal ? `${sum} / ${targetVal}` : `${sum}`;
+    valueSub = unit || "";
+    pct = targetVal ? clamp01(sum / targetVal) : sum > 0 ? 1 : 0;
   }
 
   if (track.type === "BOOLEAN") {
     const done = Boolean(src?.done);
-    primary = done ? "✓" : "—";
-    rightMini = done ? "Done" : "Not yet";
+    valueMain = done ? "✓" : "—";
+    valueSub = done ? "Done" : "Not yet";
+    pct = done ? 1 : 0;
   }
 
   if (track.type === "NUMBER_REPLACE") {
+    // still render it on Today page; leaderboard excludes it, but Today can show it.
     const v = src?.value;
-    primary =
-      v === 0 || v ? `${v} ${track.unit || ""}`.trim() : "—";
-    rightMini = label;
+    valueMain = v === 0 || v ? `${v}` : "—";
+    valueSub = unit || "";
+    pct = v === 0 || v ? 1 : 0;
   }
 
   if (track.type === "TEXT_APPEND") {
@@ -142,27 +165,21 @@ function renderSummaryCard(track, agg, rollup, ctx) {
       .filter(Boolean);
 
     const n = texts.length;
-    primary = n ? `${n}` : "0";
-    rightMini = n === 1 ? "1 entry" : `${n} entries`;
+    valueMain = `${n}`;
+    valueSub = n === 1 ? "entry" : "entries";
+    pct = n > 0 ? 1 : 0;
 
     const latest = texts[0];
-    if (latest) {
-      secondaryHtml = `
-        <div class="mini muted" style="margin-top:10px;">
-          ${esc(latest)}
-        </div>
-      `;
-    }
+    if (latest) extraLines.push(latest);
   }
 
   if (track.type === "DROPDOWN_EVENT") {
+    const optMap = optionLabelMap(track);
+
     const count = Number(src?.count || 0);
-    primary = targetVal ? `${count} / ${targetVal}` : `${count}`;
-    rightMini = count
-      ? cadence === "daily"
-        ? "Selected"
-        : "Events"
-      : "No selection yet";
+    valueMain = targetVal ? `${count} / ${targetVal}` : `${count}`;
+    valueSub = "events";
+    pct = targetVal ? clamp01(count / targetVal) : count > 0 ? 1 : 0;
 
     let labels = [];
     if (cadence === "daily") {
@@ -178,41 +195,79 @@ function renderSummaryCard(track, agg, rollup, ctx) {
         .filter(Boolean);
     }
 
+    // plain text, no pills
     if (labels.length) {
-      secondaryHtml = `<div style="margin-top:10px;">${renderBulletList(
-        labels.slice(0, 3).map(esc)
-      )}</div>`;
-      rightMini = cadence === "daily" ? labels[0] : `Events: ${labels.length}`;
+      extraLines = labels.slice(0, 3);
     }
   }
 
-  const leftMini = (() => {
-    if (track.type === "COUNTER_INCREMENT")
-      return `${label}${targetVal ? ` • Target ${targetVal}` : ""}`;
-    if (track.type === "DROPDOWN_EVENT")
-      return `${label}${targetVal ? ` • Target ${targetVal}` : ""}`;
-    return label;
-  })();
+  return {
+    title: track.name || "Untitled",
+    cadenceLabel: label,
+    valueMain,
+    valueSub,
+    pct,
+    extraLines,
+  };
+}
+
+function renderTodayCard(track, agg, rollup, ctx) {
+  const model = computeCardModel(track, agg, rollup, ctx);
+  const g = pickGradientClass();
+
+  // store pct for animation; start at 0 in CSS, then JS will set width to pct%
+  const pct100 = Math.round(model.pct * 100);
+
+  const extra =
+    model.extraLines && model.extraLines.length
+      ? `<div class="td-extra">
+          ${model.extraLines.map((t) => `<div class="td-extraLine">${esc(t)}</div>`).join("")}
+        </div>`
+      : "";
 
   return `
-    <div class="card">
-      <div class="row" style="justify-content:space-between;gap:12px;align-items:flex-start;">
-        <div style="min-width:0;">
-          <div class="card-title">${esc(track.name)}</div>
-          <div class="mini muted">${leftMini}</div>
+    <div class="td-card ${g}" data-pct="${pct100}">
+      <div class="td-fill" aria-hidden="true"></div>
+
+      <div class="td-top">
+        <div class="td-left">
+          <div class="td-title">${esc(model.title)}</div>
+          <div class="td-cadence">${esc(model.cadenceLabel)}</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-weight:700;">${esc(primary)}</div>
-          ${rightMini ? `<div class="mini muted">${esc(rightMini)}</div>` : ""}
+
+        <div class="td-right">
+          <div class="td-value">${esc(model.valueMain)}</div>
+          ${model.valueSub ? `<div class="td-unit">${esc(model.valueSub)}</div>` : ""}
         </div>
       </div>
-      ${secondaryHtml || ""}
+
+      ${extra}
     </div>
   `;
 }
 
+function applyTodayBodyBg() {
+  // Ensure Today doesn't inherit Home bg.
+  document.body.classList.remove("home-bg");
+  document.body.classList.remove("leaderboard-bg"); // harmless if not present
+  document.body.classList.add("today-bg");
+}
+
+function animateCardFills(rootEl) {
+  const cards = Array.from(rootEl.querySelectorAll(".td-card"));
+  requestAnimationFrame(() => {
+    for (const c of cards) {
+      const pct = Number(c.getAttribute("data-pct") || 0);
+      const fill = c.querySelector(".td-fill");
+      if (fill) fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    }
+  });
+}
+
 export async function todayPage({ user, profile }) {
   const root = document.getElementById("app");
+
+  applyTodayBodyBg();
 
   root.innerHTML = Shell({
     title: "Today",
@@ -224,6 +279,8 @@ export async function todayPage({ user, profile }) {
     const timeZone =
       profile?.timeZone || profile?.preferences?.timeZone || "Asia/Kolkata";
     const dayKey = getDayKeyNow(timeZone);
+    const prettyDate = formatPrettyDate(dayKey, timeZone);
+
     const { weekKey, monthKey } = getPeriodKeysForDayKey(dayKey);
 
     const tracks = await readActiveTracks(user.uid);
@@ -251,7 +308,8 @@ export async function todayPage({ user, profile }) {
       const ids = [];
       for (const day of lastDays) {
         if (t.cadence === "weekly" && day?.period?.weekKey !== weekKey) continue;
-        if (t.cadence === "monthly" && day?.period?.monthKey !== monthKey) continue;
+        if (t.cadence === "monthly" && day?.period?.monthKey !== monthKey)
+          continue;
 
         const a = day?.tracks?.[t.id];
         const c = Number(a?.count || 0);
@@ -276,23 +334,26 @@ export async function todayPage({ user, profile }) {
     const cards = tracks.length
       ? tracks
           .map((t) =>
-            renderSummaryCard(t, safeTrackAgg(dayDoc, t.id), rollups[t.id], ctx)
+            renderTodayCard(t, safeTrackAgg(dayDoc, t.id), rollups[t.id], ctx)
           )
           .join("")
-      : `<div class="card"><div class="muted">No active tracks yet. Add some in Settings → Manage Tracks.</div></div>`;
+      : `<div class="td-empty">No active tracks yet. Add some in Settings → Manage Tracks.</div>`;
 
     root.innerHTML = Shell({
       title: "Today",
       activeTab: "today",
       content: `
-        <div class="content">
-          <div class="mini muted" style="margin:6px 0 14px;">${dayKey} • ${timeZone}</div>
-          ${cards}
+        <div class="td-page">
+          <div class="td-date">${esc(prettyDate)}</div>
+          <div class="td-list">${cards}</div>
         </div>
 
         <button class="fab" id="goLog" title="Log for today">＋</button>
       `,
     });
+
+    // animate fills after DOM paint
+    animateCardFills(root);
 
     root.querySelector("#goLog").addEventListener("click", () => {
       navigate("#/today/log");

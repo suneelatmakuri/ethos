@@ -2,21 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
 
-    <!-- OPTION A (recommended): allow zoom, prevent iOS auto-zoom via CSS -->
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0" /> -->
+    <!-- App identity -->
+    <title>Ethos</title>
+    <meta name="description" content="Ethos — way-of-being system" />
 
-    <!-- OPTION B (strict): disable zoom completely (accessibility tradeoff) -->
+    <!-- Viewport (zoom disabled intentionally) -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
 
-    <title>Ethos</title>
+    <!-- iOS PWA / fullscreen support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Ethos" />
+
+    <!-- Theme colors -->
+    <meta name="theme-color" content="#0b0b0b" />
+    <meta name="background-color" content="#0b0b0b" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/vite.webp" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/ethos/manifest.webmanifest" />
   </head>
+
   <body>
     <div id="app"></div>
+
+    <!-- Vite entry (DO NOT prefix with /ethos) -->
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

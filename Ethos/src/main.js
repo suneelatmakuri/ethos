@@ -108,7 +108,7 @@ function getRenderer(path) {
       return historyPage;
 
     case "#/leaderboard":
-      return leaderboardPage;
+      return () => leaderboardPage({ user: currentUser, profile: currentProfile });
 
     case "#/settings":
       return () => settingsPage({ user: currentUser, profile: currentProfile });
@@ -247,6 +247,7 @@ startRouter(renderApp);
 // Auth observer is the “true” bootstrap
 observeAuth(async (user) => {
   currentUser = user || null;
+  window.__ethosAuthUid = currentUser?.uid || null;
     if (currentUser) {
       document.body.classList.remove("public-bg");
       document.body.style.removeProperty("--publicBgUrl");
@@ -270,3 +271,18 @@ observeAuth(async (user) => {
 // First paint while waiting for auth resolution
 document.getElementById("app").innerHTML =
   `<div class="center"><p class="muted">Loading…</p></div>`;
+
+
+// ---- PWA: Service Worker registration ----
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/ethos/sw.js")
+      .then(() => {
+        console.log("Service worker registered");
+      })
+      .catch((err) => {
+        console.error("Service worker registration failed:", err);
+      });
+  });
+}

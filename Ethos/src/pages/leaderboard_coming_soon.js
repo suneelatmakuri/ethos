@@ -4,8 +4,8 @@ import { Shell } from "../components/shell.js";
  * EDIT THESE TWO ONLY
  * (ISO strings are safest because they preserve your timezone)
  */
-const START_AT_ISO = "2026-01-31T00:00:00+05:30";
-const LAUNCH_AT_ISO = "2026-02-13T12:00:00+05:30";
+const START_AT_ISO = "2026-01-23T00:00:00+05:30";
+const LAUNCH_AT_ISO = "2026-02-03T00:00:00+05:30";
 
 /**
  * Image path:
@@ -60,7 +60,7 @@ function setRing(circleEl, fraction) {
 }
 
 // -------------------- page --------------------
-export function historyPage() {
+export function leaderboardPage() {
   // Kill any previous timer if user re-enters page
   if (window.__ethosLeaderboardTimer) {
     clearInterval(window.__ethosLeaderboardTimer);
@@ -70,14 +70,14 @@ export function historyPage() {
   const root = document.getElementById("app");
 
   root.innerHTML = Shell({
-    title: "Reflections",
-    activeTab: "history",
+    title: "Leaderboard",
+    activeTab: "leaderboard",
     content: `
       <section class="lb-page">
         <div class="card lb-card">
           <div class="lb-wrap">
             <div class="lb-title">
-              Reflections <span class="lb-soon">coming soon</span>
+              Leaderboard <span class="lb-soon">coming soon</span>
             </div>
 
             <div class="lb-sub muted">

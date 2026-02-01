@@ -1092,3 +1092,689 @@ body.home-bg{
 .tt-tile {
   -webkit-tap-highlight-color: transparent;
 }
+
+
+/* =========================
+   Leaderboard (LB)
+   ========================= */
+
+/* Page background: subtle vignette so accents read cleanly.
+   We explicitly add body.lb-bg on the leaderboard page and remove home-bg. */
+body.lb-bg{
+  overflow-y: auto;
+  height: auto;
+  background-color: #0b0c10;
+  background-image:
+    radial-gradient(1200px 900px at 50% -10%, rgba(255,255,255,0.06), rgba(255,255,255,0) 55%),
+    radial-gradient(900px 700px at 12% 28%, rgba(120,180,255,0.08), rgba(255,255,255,0) 55%),
+    radial-gradient(900px 700px at 88% 74%, rgba(180,120,255,0.07), rgba(255,255,255,0) 60%),
+    radial-gradient(1300px 1100px at 50% 120%, rgba(0,0,0,0.70), rgba(0,0,0,0.95) 55%);
+  background-attachment: fixed;
+}
+
+.lb-wrap{
+  padding: 14px 14px 18px 14px;
+}
+
+/* Tabs: centered group; only active has pill */
+.lb-tabs{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin: 6px 0 12px 0;
+}
+
+.lb-tab{
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.70);
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  padding: 8px 4px;
+  border-radius: 999px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lb-tab.active{
+  color: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 8px 14px;
+}
+
+/* List */
+.lb-list{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Track section: no glass/card fill */
+.lb-section{
+  padding: 0;
+  margin: 0;
+}
+
+.lb-header{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 2px 10px 2px;
+}
+
+.lb-title{
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.92);
+}
+
+.lb-unit{
+  font-size: 13px;
+  opacity: 0.70;
+  color: rgba(255,255,255,0.78);
+  white-space: nowrap;
+}
+
+/* This is the gradient line beside the track name */
+.lb-divider{
+  height: 1px;
+  flex: 1;
+  border-radius: 999px;
+  opacity: 0.95;
+  background: var(--lb-accent, linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02)));
+}
+
+.lb-rows{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lb-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;          /* thinner */
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;     /* no glass */
+}
+
+.lb-left{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lb-rank{
+  width: 22px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.62);
+  flex: 0 0 auto;
+}
+
+.lb-name{
+  color: rgba(255,255,255,0.84);
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-val{
+  color: rgba(255,255,255,0.90);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only leader row gets the accent */
+.lb-row.leader{
+  border: 1px solid rgba(255,255,255,0.14);
+  background: var(--lb-accent, rgba(255,255,255,0.10));
+}
+
+.lb-row.leader .lb-rank{
+  color: rgba(255,255,255,0.82);
+}
+
+/* Accent palette (dark + lifted, no neon). Each section sets --lb-accent. */
+.lb-acc1{ --lb-accent: linear-gradient(90deg, rgba(120,180,255,0.35), rgba(255,255,255,0.02)); }
+.lb-acc2{ --lb-accent: linear-gradient(90deg, rgba(140,255,210,0.30), rgba(255,255,255,0.02)); }
+.lb-acc3{ --lb-accent: linear-gradient(90deg, rgba(255,160,120,0.28), rgba(255,255,255,0.02)); }
+.lb-acc4{ --lb-accent: linear-gradient(90deg, rgba(210,160,255,0.30), rgba(255,255,255,0.02)); }
+.lb-acc5{ --lb-accent: linear-gradient(90deg, rgba(255,120,170,0.26), rgba(255,255,255,0.02)); }
+.lb-acc6{ --lb-accent: linear-gradient(90deg, rgba(110,220,255,0.26), rgba(255,255,255,0.02)); }
+.lb-acc7{ --lb-accent: linear-gradient(90deg, rgba(170,255,140,0.24), rgba(255,255,255,0.02)); }
+.lb-acc8{ --lb-accent: linear-gradient(90deg, rgba(255,210,120,0.22), rgba(255,255,255,0.02)); }
+.lb-acc9{ --lb-accent: linear-gradient(90deg, rgba(160,160,255,0.28), rgba(255,255,255,0.02)); }
+
+.lb-empty{
+  padding: 18px 6px;
+  opacity: 0.86;
+}
+
+.lb-emptySub{
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.70;
+}
+
+
+
+/* =========================
+   TODAY (namespace: td-*)
+   ========================= */
+
+body.today-bg{
+  overflow-y: auto;
+  height: auto;
+
+  /* clean charcoal base */
+  background: #0b0c10;
+
+  /* subtle vignette (like leaderboard) */
+  background-image:
+    radial-gradient(900px 520px at 50% 20%, rgba(255,255,255,0.06), rgba(0,0,0,0.72)),
+    radial-gradient(800px 600px at 50% 110%, rgba(0,0,0,0.25), rgba(0,0,0,0.92));
+  background-attachment: fixed;
+}
+
+.td-page{
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 14px 16px 90px; /* space for tabs */
+}
+
+.td-date{
+  margin: 10px 2px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.72);
+}
+
+.td-list{
+  display: grid;
+  gap: 12px;
+}
+
+.td-empty{
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.72);
+}
+
+/* Card = glass base + full-width progress fill */
+.td-card{
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  padding: 14px;
+}
+
+/* The “fill” that grows left→right */
+.td-fill{
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: var(--td-fill, linear-gradient(90deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)));
+  opacity: 0.40;
+  transition: width 520ms ease;
+  pointer-events: none;
+}
+
+/* content above fill */
+.td-top{
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;   /* vertically centered right value */
+  gap: 14px;
+}
+
+.td-left{ min-width: 0; }
+.td-title{
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.td-cadence{
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+}
+
+.td-right{
+  text-align: right;
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.td-value{
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.90);
+  font-variant-numeric: tabular-nums;
+}
+
+.td-unit{
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+}
+
+/* extra lines (no pills) */
+.td-extra{
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.td-extraLine{
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.78);
+  opacity: 0.90;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Dark-but-lifted gradients (same philosophy as leaderboard) */
+.td-g1 { --td-fill: linear-gradient(90deg, rgba(120,180,255,0.38), rgba(255,255,255,0.02)); }
+.td-g2 { --td-fill: linear-gradient(90deg, rgba(140,255,210,0.32), rgba(255,255,255,0.02)); }
+.td-g3 { --td-fill: linear-gradient(90deg, rgba(255,160,120,0.30), rgba(255,255,255,0.02)); }
+.td-g4 { --td-fill: linear-gradient(90deg, rgba(210,160,255,0.32), rgba(255,255,255,0.02)); }
+.td-g5 { --td-fill: linear-gradient(90deg, rgba(255,120,170,0.28), rgba(255,255,255,0.02)); }
+.td-g6 { --td-fill: linear-gradient(90deg, rgba(110,220,255,0.28), rgba(255,255,255,0.02)); }
+.td-g7 { --td-fill: linear-gradient(90deg, rgba(170,255,140,0.26), rgba(255,255,255,0.02)); }
+.td-g8 { --td-fill: linear-gradient(90deg, rgba(255,210,120,0.24), rgba(255,255,255,0.02)); }
+.td-g9 { --td-fill: linear-gradient(90deg, rgba(160,160,255,0.30), rgba(255,255,255,0.02)); }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .td-fill{ transition: none; }
+}
+
+
+
+
+
+/* =========================
+   TODAY LOG (namespace: tlog-*)
+   ========================= */
+
+/* Page background: subtle vignette charcoal */
+body.todaylog-bg{
+  overflow-y: auto;
+  height: auto;
+  background-color: #0b0c10;
+  background-image:
+    radial-gradient(1200px 900px at 50% -10%, rgba(255,255,255,0.06), rgba(255,255,255,0) 55%),
+    radial-gradient(900px 700px at 12% 28%, rgba(120,180,255,0.06), rgba(255,255,255,0) 55%),
+    radial-gradient(900px 700px at 88% 74%, rgba(180,120,255,0.05), rgba(255,255,255,0) 60%),
+    radial-gradient(1300px 1100px at 50% 120%, rgba(0,0,0,0.75), rgba(0,0,0,0.96) 55%);
+  background-attachment: fixed;
+}
+
+.tlog-wrap{
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px 14px 110px; /* space for save bar + tabs */
+}
+
+.tlog-top{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin: 8px 0 14px;
+}
+
+.tlog-back{
+  justify-self: start;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 6px 2px;
+
+  color: rgba(255,255,255,0.72);
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tlog-back:hover{ color: rgba(255,255,255,0.92); }
+
+.tlog-date{
+  justify-self: center;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.78);
+  text-align: center;
+}
+
+.tlog-topSpacer{ justify-self: end; }
+
+.tlog-list{
+  display: grid;
+  gap: 12px;
+}
+
+.tlog-card{
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  backdrop-filter: blur(10px);
+}
+
+.tlog-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.tlog-title{
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.92);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tlog-rightMeta{
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+  white-space: nowrap;
+}
+
+.tlog-counter{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.tlog-roundBtn{
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.85);
+  font-size: 18px;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tlog-roundBtn:active{ transform: translateY(1px); }
+
+.tlog-counterInput{
+  width: 120px;
+  text-align: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.92);
+  padding: 10px 12px;
+  outline: none;
+}
+
+.tlog-input,
+.tlog-select,
+.tlog-textarea{
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  color: rgba(255,255,255,0.92);
+  padding: 12px;
+  outline: none;
+}
+
+.tlog-textarea{
+  resize: none;
+  line-height: 1.4;
+}
+
+/* Custom checkbox (no system checkbox look) */
+.tlog-checkWrap{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tlog-checkInput{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.tlog-checkUI{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.04);
+  position: relative;
+}
+
+.tlog-checkInput:checked + .tlog-checkUI{
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(255,255,255,0.82);
+}
+
+.tlog-checkInput:checked + .tlog-checkUI::after{
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid rgba(0,0,0,0.85);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Save bar */
+.tlog-saveBar{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 76px; /* sits above bottom tabs */
+  padding: 10px 14px 12px;
+  pointer-events: none;
+}
+
+.tlog-save{
+  pointer-events: auto;
+  width: min(520px, calc(100vw - 28px));
+  margin: 0 auto;
+  display: block;
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.28);
+  color: rgba(255,255,255,0.90);
+
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-tap-highlight-color: transparent;
+}
+.tlog-save:active{ transform: translateY(1px); }
+
+.tlog-status{
+  pointer-events: none;
+  width: min(520px, calc(100vw - 28px));
+  margin: 6px auto 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+  min-height: 16px;
+  text-align: center;
+}
+
+
+
+/* =========================
+   Bottom Tabs — refreshed
+   ========================= */
+
+.tabs{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 6px;
+
+  /* shorter bar */
+  min-height: 64px;
+
+  /* calm background */
+  background: rgba(10, 12, 16, 0.78);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.tab{
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 6px;
+  text-decoration: none;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  /* muted by default */
+  color: rgba(255,255,255,0.55);
+}
+
+.tab-ico{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+/* Normalize all icons */
+.tab-ico svg{
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.95;
+}
+
+/* Settings gear tends to look bigger; nudge down */
+.tab[data-id="settings"] .tab-ico svg{
+  width: 17px;
+  height: 17px;
+}
+
+/* Label */
+.tab-txt{
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Active = bright + slightly bolder, NO loud background */
+.tab.active{
+  color: rgba(255,255,255,0.92);
+}
+
+.tab.active .tab-txt{
+  font-weight: 650;
+}
+
+/* Remove any legacy "raised center" styling if it exists */
+.tab-center{
+  transform: none !important;
+  margin-top: 0 !important;
+  padding-top: 6px !important;
+}
+
+/* Force-remove any pill background/border from earlier .tab.active */
+.tab{
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.tab.active{
+  background: transparent !important;
+  border-color: transparent !important;
+  color: rgba(255,255,255,0.96);
+}
+
+.tab.active .tab-txt{
+  font-weight: 750;
+}
+
+/* Make the active icon feel "bolder" (SVG can't be bold; increase stroke) */
+.tab.active .tab-ico svg{
+  stroke-width: 2.2;
+  opacity: 1;
+}
+
+/* Unselected stays muted */
+.tab:not(.active){
+  color: rgba(255,255,255,0.48);
+}
+
+/* Settings icon still looks bigger: push it down a notch more */
+.tab[data-id="settings"] .tab-ico svg{
+  width: 16px;
+  height: 16px;
+}

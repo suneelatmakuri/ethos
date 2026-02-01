@@ -4,56 +4,473 @@ export const ETHOS_CONFIG = {
   defaultTracks: [],
 };
 
+// NOTE: Template shape must remain:
+// { id, name, category, iconKey, track: { ... } }
+// Also: templates should NOT set targets; users will customize targets after adding.
+
 export const SEED_TEMPLATES = [
-  // Health
-  { id: "seed_water", name: "Water", category: "Health", iconKey: "water", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "ml", config: { incrementStep: 250 }, target: { mode: "value", value: 3000 } } },
-  { id: "seed_steps", name: "Steps", category: "Health", iconKey: "steps", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "steps", config: { incrementStep: 500 }, target: { mode: "value", value: 8000 } } },
-  { id: "seed_protein", name: "Protein", category: "Health", iconKey: "protein", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "g", config: { incrementStep: 10 }, target: { mode: "value", value: 120 } } },
-  { id: "seed_calories", name: "Calories", category: "Health", iconKey: "calories", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "kcal", config: { incrementStep: 50 }, target: { mode: "value", value: 0 } } },
-  { id: "seed_vitamins", name: "Vitamins", category: "Health", iconKey: "vitamins", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_supps", name: "Supplements", category: "Health", iconKey: "supplements", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
+  // -------------------------
+  // FITNESS
+  // -------------------------
+  {
+    id: "seed_run",
+    name: "Run",
+    category: "Fitness",
+    iconKey: "run",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "weekly",
+      unit: "km",
+      config: { incrementStep: 1 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_workout",
+    name: "Workout",
+    category: "Fitness",
+    iconKey: "workout",
+    track: {
+      type: "DROPDOWN_EVENT",
+      cadence: "weekly",
+      unit: "sessions",
+      config: {
+        allowMultiSelect: false,
+        optionsAreUserEditable: true,
+        options: [
+          { id: "upper_body", label: "Upper Body" },
+          { id: "lower_body", label: "Lower Body" },
+          { id: "back", label: "Back" },
+          { id: "biceps", label: "Biceps" },
+          { id: "arms", label: "Arms" },
+          { id: "shoulders", label: "Shoulders" },
+          { id: "legs", label: "Legs" },
+        ],
+      },
+      target: null,
+    },
+  },
+  {
+    id: "seed_dance",
+    name: "Dance",
+    category: "Fitness",
+    iconKey: "dance",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
+  {
+    id: "seed_yoga",
+    name: "Yoga",
+    category: "Fitness",
+    iconKey: "yoga",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
 
-  // Fitness
-  { id: "seed_workout", name: "Workout", category: "Fitness", iconKey: "workout", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_run", name: "Run", category: "Fitness", iconKey: "run", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_cycle", name: "Cycling", category: "Fitness", iconKey: "cycle", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_swim", name: "Swim", category: "Fitness", iconKey: "swim", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_strength", name: "Strength", category: "Fitness", iconKey: "strength", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_stretch", name: "Stretching", category: "Fitness", iconKey: "stretch", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_mobility", name: "Mobility", category: "Fitness", iconKey: "mobility", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
+  // -------------------------
+  // HEALTH
+  // -------------------------
+  {
+    id: "seed_water",
+    name: "Water",
+    category: "Health",
+    iconKey: "water",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "daily",
+      unit: "ml",
+      config: { incrementStep: 250 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_steps",
+    name: "Steps",
+    category: "Health",
+    iconKey: "steps",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "daily",
+      unit: "steps",
+      config: { incrementStep: 500 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_protein",
+    name: "Protein",
+    category: "Health",
+    iconKey: "protein",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "daily",
+      unit: "g",
+      config: { incrementStep: 5 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_calories",
+    name: "Calories",
+    category: "Health",
+    iconKey: "calories",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "daily",
+      unit: "kcal",
+      config: { incrementStep: 50 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_supplements",
+    name: "Supplements",
+    category: "Health",
+    iconKey: "supplements",
+    track: {
+      type: "BOOLEAN",
+      cadence: "daily",
+      unit: "times",
+      config: { booleanMode: "count", suggestedDelta: 1 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_weight",
+    name: "Weight",
+    category: "Health",
+    iconKey: "weight",
+    track: {
+      type: "NUMBER_REPLACE",
+      cadence: "weekly",
+      unit: "kg",
+      config: { precision: 1, minValue: 0, maxValue: 500 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_body_fat",
+    name: "Body Fat",
+    category: "Health",
+    iconKey: "body_fat",
+    track: {
+      type: "NUMBER_REPLACE",
+      cadence: "weekly",
+      unit: "%",
+      config: { precision: 1, minValue: 0, maxValue: 100 },
+      target: null,
+    },
+  },
 
-  // Mind
-  { id: "seed_meditation", name: "Meditation", category: "Mind", iconKey: "meditation", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_breath", name: "Breathwork", category: "Mind", iconKey: "breath", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_journal", name: "Journal", category: "Mind", iconKey: "journal", track: { type: "TEXT_APPEND", cadence: "daily", unit: "entries", config: { maxLength: 2000 }, target: { mode: "count", value: 0 } } },
-  { id: "seed_mood", name: "Mood", category: "Mind", iconKey: "mood", track: { type: "DROPDOWN_EVENT", cadence: "daily", unit: "", config: { options: [{ id: "great", label: "Great" },{ id: "good", label: "Good" },{ id: "ok", label: "Okay" },{ id: "low", label: "Low" },{ id: "bad", label: "Bad" }] }, target: { mode: "count", value: 0 } } },
-  { id: "seed_focus", name: "Focus", category: "Mind", iconKey: "focus", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_gratitude", name: "Gratitude", category: "Mind", iconKey: "gratitude", track: { type: "TEXT_APPEND", cadence: "daily", unit: "entries", config: { maxLength: 800 }, target: { mode: "count", value: 0 } } },
+  // -------------------------
+  // HOME
+  // -------------------------
+  {
+    id: "seed_cleaning",
+    name: "Cleaning",
+    category: "Home",
+    iconKey: "cleaning",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "times",
+      config: { booleanMode: "count", suggestedDelta: 1 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_cooking",
+    name: "Cooking",
+    category: "Home",
+    iconKey: "cooking",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "times",
+      config: { booleanMode: "count", suggestedDelta: 1 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_chores",
+    name: "Chores",
+    category: "Home",
+    iconKey: "chores",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "times",
+      config: { booleanMode: "count", suggestedDelta: 1 },
+      target: null,
+    },
+  },
 
-  // Lifestyle
-  { id: "seed_sleep", name: "Sleep", category: "Lifestyle", iconKey: "sleep", track: { type: "NUMBER_REPLACE", cadence: "daily", unit: "hrs", config: { precision: 1, minValue: 0, maxValue: 24 }, target: null } },
-  { id: "seed_reading", name: "Reading", category: "Lifestyle", iconKey: "reading", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "min", config: { incrementStep: 10 }, target: { mode: "value", value: 20 } } },
-  { id: "seed_skincare", name: "Skincare", category: "Lifestyle", iconKey: "skincare", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_screen", name: "Screen Time", category: "Lifestyle", iconKey: "screen_time", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "min", config: { incrementStep: 15 }, target: { mode: "value", value: 0 } } },
-  { id: "seed_coffee", name: "Coffee", category: "Lifestyle", iconKey: "coffee", track: { type: "COUNTER_INCREMENT", cadence: "daily", unit: "cups", config: { incrementStep: 1 }, target: { mode: "value", value: 0 } } },
+  // -------------------------
+  // LIFESTYLE
+  // -------------------------
+  {
+    id: "seed_reading_time",
+    name: "Reading Time",
+    category: "Lifestyle",
+    iconKey: "reading",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "weekly",
+      unit: "min",
+      config: { incrementStep: 10 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_screen_time",
+    name: "Screen Time",
+    category: "Lifestyle",
+    iconKey: "screen_time",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "daily",
+      unit: "min",
+      config: { incrementStep: 15 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_skincare",
+    name: "Skincare",
+    category: "Lifestyle",
+    iconKey: "skincare",
+    track: {
+      type: "DROPDOWN_EVENT",
+      cadence: "daily",
+      unit: "sessions",
+      config: {
+        allowMultiSelect: false,
+        optionsAreUserEditable: true,
+        options: [
+          { id: "morning", label: "Morning" },
+          { id: "midday", label: "Midday" },
+          { id: "bedtime", label: "Bedtime" },
+        ],
+      },
+      target: null,
+    },
+  },
+  {
+    id: "seed_sunlight",
+    name: "Sunlight",
+    category: "Lifestyle",
+    iconKey: "sunlight",
+    track: {
+      type: "BOOLEAN",
+      cadence: "daily",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
+  {
+    id: "seed_sleep",
+    name: "Sleep",
+    category: "Lifestyle",
+    iconKey: "sleep",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "daily",
+      unit: "hours",
+      config: { incrementStep: 0.5 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_food_log",
+    name: "Food Log",
+    category: "Lifestyle",
+    iconKey: "food",
+    track: {
+      type: "TEXT_APPEND",
+      cadence: "daily",
+      unit: "entries",
+      config: { maxLength: 2000, showOnDashboard: true },
+      target: null,
+    },
+  },
 
-  // Social
-  { id: "seed_social", name: "Social", category: "Social", iconKey: "social", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_family", name: "Family Time", category: "Social", iconKey: "family", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_music", name: "Music", category: "Social", iconKey: "music", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
+  // -------------------------
+  // MIND
+  // -------------------------
+  {
+    id: "seed_journal",
+    name: "Journal",
+    category: "Mind",
+    iconKey: "journal",
+    track: {
+      type: "TEXT_APPEND",
+      cadence: "daily",
+      unit: "entries",
+      config: { maxLength: 4000, showOnDashboard: true },
+      target: null,
+    },
+  },
+  {
+    id: "seed_meditation",
+    name: "Meditation",
+    category: "Mind",
+    iconKey: "meditation",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
+  {
+    id: "seed_mood",
+    name: "Mood",
+    category: "Mind",
+    iconKey: "mood",
+    track: {
+      type: "DROPDOWN_EVENT",
+      cadence: "daily",
+      unit: "",
+      config: {
+        allowMultiSelect: false,
+        optionsAreUserEditable: true,
+        options: [
+          { id: "great", label: "Great" },
+          { id: "good", label: "Good" },
+          { id: "okay", label: "Okay" },
+          { id: "low", label: "Low" },
+          { id: "bad", label: "Bad" },
+        ],
+      },
+      target: null,
+    },
+  },
+  {
+    id: "seed_breathwork",
+    name: "Breathwork",
+    category: "Mind",
+    iconKey: "breathwork",
+    track: {
+      type: "BOOLEAN",
+      cadence: "daily",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
+  {
+    id: "seed_gratitude",
+    name: "Gratitude",
+    category: "Mind",
+    iconKey: "gratitude",
+    track: {
+      type: "TEXT_APPEND",
+      cadence: "daily",
+      unit: "entries",
+      config: { maxLength: 2000, showOnDashboard: true },
+      target: null,
+    },
+  },
+  {
+    id: "seed_focus",
+    name: "Focus",
+    category: "Mind",
+    iconKey: "focus",
+    track: {
+      type: "BOOLEAN",
+      cadence: "daily",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
 
-  // Work / Life admin
-  { id: "seed_learn", name: "Learning", category: "Work", iconKey: "learn", track: { type: "COUNTER_INCREMENT", cadence: "weekly", unit: "min", config: { incrementStep: 30 }, target: { mode: "value", value: 0 } } },
-  { id: "seed_finance", name: "Finance Review", category: "Work", iconKey: "finance", track: { type: "BOOLEAN", cadence: "monthly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_chores", name: "Chores", category: "Home", iconKey: "chores", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_clean", name: "Clean", category: "Home", iconKey: "clean", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_cook", name: "Cook", category: "Home", iconKey: "cook", track: { type: "BOOLEAN", cadence: "weekly", unit: "", config: { booleanMode: "done_only" }, target: null } },
+  // -------------------------
+  // SOCIAL
+  // -------------------------
+  {
+    id: "seed_social_activity",
+    name: "Social Activity",
+    category: "Social",
+    iconKey: "social",
+    track: {
+      type: "TEXT_APPEND",
+      cadence: "weekly",
+      unit: "entries",
+      config: { maxLength: 2000, showOnDashboard: false },
+      target: null,
+    },
+  },
 
-  // Optional “edge” habits
-  { id: "seed_sun", name: "Sunlight", category: "Lifestyle", iconKey: "sunlight", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_posture", name: "Posture", category: "Health", iconKey: "posture", track: { type: "BOOLEAN", cadence: "daily", unit: "", config: { booleanMode: "done_only" }, target: null } },
-  { id: "seed_energy", name: "Energy", category: "Mind", iconKey: "energy", track: { type: "NUMBER_REPLACE", cadence: "daily", unit: "/10", config: { precision: 0, minValue: 0, maxValue: 10 }, target: null } },
+  // -------------------------
+  // LEARNING
+  // -------------------------
+  {
+    id: "seed_learning_improvement",
+    name: "Learning Improvement",
+    category: "Learning",
+    iconKey: "learning",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "weekly",
+      unit: "min",
+      config: { incrementStep: 10 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_skill_up",
+    name: "Skill Up",
+    category: "Learning",
+    iconKey: "skill",
+    track: {
+      type: "COUNTER_INCREMENT",
+      cadence: "weekly",
+      unit: "min",
+      config: { incrementStep: 10 },
+      target: null,
+    },
+  },
+  {
+    id: "seed_language_learning",
+    name: "Language Learning",
+    category: "Learning",
+    iconKey: "language",
+    track: {
+      type: "BOOLEAN",
+      cadence: "daily",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
 
-  // Misc fallback demo
-  { id: "seed_misc_quick", name: "Quick Note", category: null, iconKey: "notes", track: { type: "TEXT_APPEND", cadence: "daily", unit: "entries", config: { maxLength: 600 }, target: { mode: "count", value: 0 } } },
+  // -------------------------
+  // FINANCE
+  // -------------------------
+  {
+    id: "seed_expense_review",
+    name: "Expense Review",
+    category: "Finance",
+    iconKey: "finance",
+    track: {
+      type: "BOOLEAN",
+      cadence: "weekly",
+      unit: "",
+      config: { booleanMode: "done_only" },
+      target: null,
+    },
+  },
 ];
